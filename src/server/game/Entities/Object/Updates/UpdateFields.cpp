@@ -9472,14 +9472,15 @@ void HousingRoomComponentMeshData::ClearChangesMask()
 
 void HousingPlayerHouseData::WriteCreate(EnumFlag<UpdateFieldFlag> fieldVisibilityFlags, ByteBuffer& data, Player const* receiver, BaseEntity const* owner) const
 {
+    // IDA-verified wire order: BnetAccount, PlotIndex, Level, Favor, 4 budgets, EntityGUID (64 bytes)
     data << *BnetAccount;
     data << int32(PlotIndex);
     data << uint32(Level);
     data << uint64(Favor);
     data << uint32(InteriorDecorPlacementBudget);
     data << uint32(ExteriorDecorPlacementBudget);
-    data << uint32(ExteriorFixtureBudget);
     data << uint32(RoomPlacementBudget);
+    data << uint32(ExteriorFixtureBudget);
     data << *EntityGUID;
 }
 
@@ -9521,11 +9522,11 @@ void HousingPlayerHouseData::WriteUpdate(Mask const& changesMask, ByteBuffer& da
         }
         if (changesMask[7])
         {
-            data << uint32(ExteriorFixtureBudget);
+            data << uint32(RoomPlacementBudget);
         }
         if (changesMask[8])
         {
-            data << uint32(RoomPlacementBudget);
+            data << uint32(ExteriorFixtureBudget);
         }
         if (changesMask[9])
         {
@@ -9542,8 +9543,8 @@ void HousingPlayerHouseData::ClearChangesMask()
     Base::ClearChangesMask(Favor);
     Base::ClearChangesMask(InteriorDecorPlacementBudget);
     Base::ClearChangesMask(ExteriorDecorPlacementBudget);
-    Base::ClearChangesMask(ExteriorFixtureBudget);
     Base::ClearChangesMask(RoomPlacementBudget);
+    Base::ClearChangesMask(ExteriorFixtureBudget);
     Base::ClearChangesMask(EntityGUID);
     _changesMask.ResetAll();
 }

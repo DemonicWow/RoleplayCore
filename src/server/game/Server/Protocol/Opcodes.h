@@ -381,11 +381,17 @@ enum OpcodeClient : uint32
     CMSG_GET_ACCOUNT_NOTIFICATIONS                                  = 0x400162,
     CMSG_GET_ALL_LICENSED_DECOR_QUANTITIES                          = 0x290034,
     CMSG_GET_AVAILABLE_INITIATIVE_REQUEST                           = 0x380002,
+    CMSG_GET_INITIATIVE_CLAIM_REWARD_REQUEST                        = 0x380005,
+    CMSG_GET_INITIATIVE_LEADERBOARD_REQUEST                         = 0x380006,
     CMSG_GET_CHARACTER_CURRENCY_TRANSFER_LOG                        = 0x29001F,
     CMSG_GET_CLIENT_CHECKOUT_LICENSES                               = 0x400140,
     CMSG_GET_DECOR_REFUND_LIST                                      = 0x290031,
     CMSG_GET_GARRISON_INFO                                          = 0x3A01A8,
     CMSG_GET_INITIATIVE_ACTIVITY_LOG_REQUEST                        = 0x380004,
+    CMSG_GET_INITIATIVE_OPEN_CHEST_REQUEST                          = 0x380007,
+    CMSG_GET_INITIATIVE_TASK_ACCEPT_REQUEST                         = 0x380008,
+    CMSG_GET_INITIATIVE_TASK_ABANDON_REQUEST                        = 0x380009,
+    CMSG_GET_INITIATIVE_TASK_PROGRESS_REQUEST                       = 0x38000A,
     CMSG_GET_ITEM_PURCHASE_DATA                                     = 0x3B00CE,
     CMSG_GET_LANDING_PAGE_SHIPMENTS                                 = 0x3A01E4,
     CMSG_GET_LAST_CATALOG_FETCH                                     = 0x290036,
@@ -456,6 +462,7 @@ enum OpcodeClient : uint32
     CMSG_HOUSE_EXTERIOR_LOCK                                        = 0x2E0000,
     CMSG_HOUSE_EXTERIOR_SET_HOUSE_POSITION                          = 0x2E0001,
     CMSG_HOUSE_INTERIOR_LEAVE_HOUSE                                 = 0x2F0001,
+    CMSG_HOUSING_DECOR_CATALOG_CREATE_SEARCHER                      = 0x300007,
     CMSG_HOUSING_DECOR_DELETE_FROM_STORAGE                          = 0x300009,
     CMSG_HOUSING_DECOR_DELETE_FROM_STORAGE_BY_ID                    = 0x30000A,
     CMSG_HOUSING_DECOR_LOCK                                         = 0x300004,
@@ -466,15 +473,30 @@ enum OpcodeClient : uint32
     CMSG_HOUSING_DECOR_REQUEST_STORAGE                              = 0x30000E,
     CMSG_HOUSING_DECOR_SET_DYE_SLOTS                                = 0x300006,
     CMSG_HOUSING_DECOR_SET_EDIT_MODE                                = 0x300000,
+    CMSG_HOUSING_DECOR_START_PLACING_NEW_DECOR                      = 0x300005,
+    CMSG_HOUSING_DECOR_UPDATE_DYE_SLOT                              = 0x300008,
+    CMSG_HOUSING_DECOR_START_PLACING_FROM_SOURCE                    = 0x30000B,
+    CMSG_HOUSING_DECOR_CLEANUP_MODE_TOGGLE                          = 0x30000C,
+    CMSG_HOUSING_DECOR_BATCH_OPERATION                              = 0x30000D,
+    CMSG_HOUSING_DECOR_PLACEMENT_PREVIEW                            = 0x30000F,
+    CMSG_HOUSING_DECOR_CONFIRM_PREVIEW_PLACEMENT                    = 0x300011, // Purpose unverified ? follows PlacementPreview sequence
     CMSG_HOUSING_FIXTURE_CREATE_FIXTURE                             = 0x310006,
     CMSG_HOUSING_FIXTURE_DELETE_FIXTURE                             = 0x310007,
     CMSG_HOUSING_FIXTURE_SET_CORE_FIXTURE                           = 0x310005,
     CMSG_HOUSING_FIXTURE_SET_EDIT_MODE                              = 0x310000,
     CMSG_HOUSING_FIXTURE_SET_HOUSE_SIZE                             = 0x310003,
     CMSG_HOUSING_FIXTURE_SET_HOUSE_TYPE                             = 0x310004,
+    CMSG_HOUSING_FIXTURE_CREATE_BASIC_HOUSE                         = 0x310001,
+    CMSG_HOUSING_FIXTURE_DELETE_HOUSE                               = 0x310002,
     CMSG_HOUSING_GET_CURRENT_HOUSE_INFO                             = 0x350006,
     CMSG_HOUSING_GET_PLAYER_PERMISSIONS                             = 0x350007,
     CMSG_HOUSING_HOUSE_STATUS                                       = 0x350005,
+    CMSG_HOUSING_REQUEST_EDITOR_AVAILABILITY                        = 0x350009,
+    CMSG_HOUSING_SYSTEM_HOUSE_STATUS_QUERY                          = 0x350000,
+    CMSG_HOUSING_SYSTEM_GET_HOUSE_INFO_ALT                          = 0x350001,
+    CMSG_HOUSING_SYSTEM_HOUSE_SNAPSHOT                              = 0x350002,
+    CMSG_HOUSING_SYSTEM_EXPORT_HOUSE                                = 0x350003,
+    CMSG_HOUSING_SYSTEM_UPDATE_HOUSE_INFO                           = 0x350004,
     CMSG_HOUSING_PHOTO_SHARING_CLEAR_AUTHORIZATION                  = 0x4001A0,
     CMSG_HOUSING_PHOTO_SHARING_COMPLETE_AUTHORIZATION               = 0x40019F,
     CMSG_HOUSING_RESET_KIOSK_MODE                                   = 0x350008,
@@ -502,10 +524,33 @@ enum OpcodeClient : uint32
     CMSG_HOUSING_SVCS_RELINQUISH_HOUSE                              = 0x330009,
     CMSG_HOUSING_SVCS_START_TUTORIAL                                = 0x330018,
     CMSG_HOUSING_SVCS_TELEPORT_TO_PLOT                              = 0x330017,
+    CMSG_HOUSING_SVCS_REQUEST_PERMISSIONS_CHECK                     = 0x330000,
+    CMSG_HOUSING_SVCS_CLEAR_PLOT_RESERVATION                        = 0x330005,
+    CMSG_HOUSING_SVCS_GET_PLAYER_HOUSES_INFO_ALT                    = 0x33000B,
+    CMSG_HOUSING_SVCS_GET_ROSTER_DATA                               = 0x33000C,
+    CMSG_HOUSING_SVCS_ROSTER_UPDATE_SUBSCRIBE                       = 0x33000D,
+    CMSG_HOUSING_SVCS_CHANGE_HOUSE_COSMETIC_OWNER                   = 0x330010,
+    CMSG_HOUSING_SVCS_COMPLETE_TUTORIAL_STEP                        = 0x33001A, // Purpose unverified ? between StartTutorial and AcceptOwnership
+    CMSG_HOUSING_SVCS_QUERY_HOUSE_LEVEL_FAVOR                       = 0x330012,
+    CMSG_HOUSING_SVCS_GUILD_ADD_HOUSE                               = 0x330013,
+    CMSG_HOUSING_SVCS_GUILD_APPEND_NEIGHBORHOOD                     = 0x330014,
+    CMSG_HOUSING_SVCS_GUILD_RENAME_NEIGHBORHOOD                     = 0x330015,
+    CMSG_HOUSING_SVCS_GUILD_GET_HOUSING_INFO                        = 0x330016,
+    CMSG_HOUSING_SVCS_QUERY_PENDING_INVITES                         = 0x330022, // Purpose unverified ? between GetBNetFriendNeighborhoods and DeleteAllInvites
+    CMSG_HOUSING_SVCS_SET_TUTORIAL_STATE                            = 0x330019, // Purpose unverified ? between StartTutorial and AcceptOwnership
+    CMSG_HOUSING_SVCS_SKIP_TUTORIAL                                 = 0x33001B, // Purpose unverified ? between StartTutorial and AcceptOwnership
     CMSG_HOUSING_SVCS_UPDATE_HOUSE_SETTINGS                         = 0x33000A,
     CMSG_IGNORE_TRADE                                               = 0x3A0003,
     CMSG_INITIATE_ROLE_POLL                                         = 0x400006,
     CMSG_INITIATE_TRADE                                             = 0x3A0000,
+    CMSG_INITIATIVE_ACCEPT_MILESTONE_REQUEST                        = 0x380001,
+    CMSG_INITIATIVE_REPORT_PROGRESS                                 = 0x380003,
+    CMSG_INITIATIVE_UNKNOWN_0B                                      = 0x38000B,
+    CMSG_INITIATIVE_UNKNOWN_0C                                      = 0x38000C,
+    CMSG_INITIATIVE_UNKNOWN_0D                                      = 0x38000D,
+    CMSG_INITIATIVE_UNKNOWN_0E                                      = 0x38000E,
+    CMSG_INITIATIVE_UNKNOWN_0F                                      = 0x38000F,
+    CMSG_INITIATIVE_UNKNOWN_10                                      = 0x380010,
     CMSG_INITIATIVE_UPDATE_ACTIVE_NEIGHBORHOOD                      = 0x3C0000,
     CMSG_INSPECT                                                    = 0x3B00C8,
     CMSG_INSTANCE_ABANDON_VOTE_RESPONSE                             = 0x400061,
@@ -688,6 +733,8 @@ enum OpcodeClient : uint32
     CMSG_NEIGHBORHOOD_CHARTER_FINALIZE                              = 0x370004,
     CMSG_NEIGHBORHOOD_CHARTER_OPEN_CONFIRMATION_UI                  = 0x370000,
     CMSG_NEIGHBORHOOD_CHARTER_SEND_SIGNATURE_REQUEST                = 0x370007,
+    CMSG_NEIGHBORHOOD_CHARTER_SIGN_RESPONSE                         = 0x370002,
+    CMSG_NEIGHBORHOOD_CHARTER_REMOVE_SIGNATURE                      = 0x370005,
     CMSG_NEIGHBORHOOD_EVICT_PLOT                                    = 0x39000F,
     CMSG_NEIGHBORHOOD_GET_INVITES                                   = 0x390008,
     CMSG_NEIGHBORHOOD_GET_ROSTER                                    = 0x39000E,
@@ -700,6 +747,9 @@ enum OpcodeClient : uint32
     CMSG_NEIGHBORHOOD_PLAYER_GET_INVITE                             = 0x390007,
     CMSG_NEIGHBORHOOD_REMOVE_SECONDARY_OWNER                        = 0x390003,
     CMSG_NEIGHBORHOOD_SET_PUBLIC_FLAG                               = 0x390001,
+    CMSG_NEIGHBORHOOD_CANCEL_INVITATION_ALT                         = 0x39000C,
+    CMSG_NEIGHBORHOOD_INVITE_NOTIFICATION_ACK                       = 0x390010,
+    CMSG_NEIGHBORHOOD_OFFER_OWNERSHIP_RESPONSE                      = 0x390011,
     CMSG_NEIGHBORHOOD_UPDATE_NAME                                   = 0x390000,
     CMSG_NEUTRAL_PLAYER_SELECT_FACTION                              = 0x3A008A,
     CMSG_NEXT_CINEMATIC_CAMERA                                      = 0x3B00E3,
@@ -1042,7 +1092,7 @@ enum OpcodeClient : uint32
     CMSG_TRANSMOGRIFY_ITEMS                                         = CMSG_REQUEST_SCHEDULED_PVP_INFO + 1,
 };
 
-inline constexpr std::size_t NUM_CMSG_OPCODES = 1938;
+inline constexpr std::size_t NUM_CMSG_OPCODES = 1939;
 
 inline constexpr std::ptrdiff_t GetOpcodeArrayIndex(OpcodeClient opcode)
 {
@@ -1059,17 +1109,17 @@ inline constexpr std::ptrdiff_t GetOpcodeArrayIndex(OpcodeClient opcode)
         case 0x31: return idInGroup <   8 ? idInGroup +  169 : -1;
         case 0x32: return idInGroup <   9 ? idInGroup +  177 : -1;
         case 0x33: return idInGroup <  36 ? idInGroup +  186 : -1;
-        case 0x35: return idInGroup <   9 ? idInGroup +  222 : -1;
-        case 0x37: return idInGroup <   8 ? idInGroup +  231 : -1;
-        case 0x38: return idInGroup <  16 ? idInGroup +  239 : -1;
-        case 0x39: return idInGroup <  16 ? idInGroup +  255 : -1;
-        case 0x3A: return idInGroup < 782 ? idInGroup +  271 : -1;
-        case 0x3B: return idInGroup < 305 ? idInGroup + 1053 : -1;
-        case 0x3C: return idInGroup <   1 ? idInGroup + 1358 : -1;
-        case 0x3D: return idInGroup <  10 ? idInGroup + 1359 : -1;
-        case 0x3E: return idInGroup < 134 ? idInGroup + 1369 : -1;
-        case 0x40: return idInGroup < 417 ? idInGroup + 1503 : -1;
-        case 0x41: return idInGroup <  18 ? idInGroup + 1920 : -1;
+        case 0x35: return idInGroup <  10 ? idInGroup +  222 : -1;
+        case 0x37: return idInGroup <   8 ? idInGroup +  232 : -1;
+        case 0x38: return idInGroup <  16 ? idInGroup +  240 : -1;
+        case 0x39: return idInGroup <  16 ? idInGroup +  256 : -1;
+        case 0x3A: return idInGroup < 782 ? idInGroup +  272 : -1;
+        case 0x3B: return idInGroup < 305 ? idInGroup + 1054 : -1;
+        case 0x3C: return idInGroup <   1 ? idInGroup + 1359 : -1;
+        case 0x3D: return idInGroup <  10 ? idInGroup + 1360 : -1;
+        case 0x3E: return idInGroup < 134 ? idInGroup + 1370 : -1;
+        case 0x40: return idInGroup < 417 ? idInGroup + 1504 : -1;
+        case 0x41: return idInGroup <  18 ? idInGroup + 1921 : -1;
         default: return -1;
     }
 }
@@ -1086,6 +1136,10 @@ enum OpcodeServer : uint32
     SMSG_ACCOUNT_EXTERIOR_FIXTURE_COLLECTION_UPDATE                 = 0x420054,
     SMSG_ACCOUNT_HEIRLOOM_UPDATE                                    = 0x420049,
     SMSG_ACCOUNT_HOUSE_TYPE_COLLECTION_UPDATE                       = 0x420057,
+    SMSG_ACCOUNT_HOUSING_FIXTURE_ADDED                              = 0x400050,
+    SMSG_ACCOUNT_HOUSING_ROOM_ADDED                                 = 0x40004F,
+    SMSG_ACCOUNT_HOUSING_ROOM_COMPONENT_TEXTURE_ADDED               = 0x400052,
+    SMSG_ACCOUNT_HOUSING_THEME_ADDED                                = 0x400051,
     SMSG_ACCOUNT_ITEM_COLLECTION_DATA                               = 0x42035B,
     SMSG_ACCOUNT_MOUNT_REMOVED                                      = 0x420047,
     SMSG_ACCOUNT_MOUNT_UPDATE                                       = 0x420046,
@@ -1641,15 +1695,22 @@ enum OpcodeServer : uint32
     SMSG_HOTFIX_MESSAGE                                             = 0x460002,
     SMSG_HOUSE_EXTERIOR_LOCK_RESPONSE                               = 0x500000,
     SMSG_HOUSE_EXTERIOR_SET_HOUSE_POSITION_RESPONSE                 = 0x500001,
+    SMSG_HOUSE_INTERIOR_ENTER_HOUSE                                 = 0x2F0000,
+    SMSG_HOUSE_INTERIOR_LEAVE_HOUSE_RESPONSE                        = 0x2F0001,
     SMSG_HOUSING_DECOR_ADD_TO_HOUSE_CHEST_RESPONSE                  = 0x510007,
+    SMSG_HOUSING_DECOR_BATCH_OPERATION_RESPONSE                     = 0x51000D,
+    SMSG_HOUSING_DECOR_CATALOG_CREATE_SEARCHER_RESPONSE             = 0x51000C,
     SMSG_HOUSING_DECOR_DELETE_FROM_STORAGE_RESPONSE                 = 0x510005,
     SMSG_HOUSING_DECOR_LOCK_RESPONSE                                = 0x510004,
     SMSG_HOUSING_DECOR_MOVE_RESPONSE                                = 0x510001,
     SMSG_HOUSING_DECOR_PLACE_RESPONSE                               = 0x510002,
+    SMSG_HOUSING_DECOR_PLACEMENT_PREVIEW_RESPONSE                   = 0x51000F,
     SMSG_HOUSING_DECOR_REMOVE_RESPONSE                              = 0x510003,
     SMSG_HOUSING_DECOR_REQUEST_STORAGE_RESPONSE                     = 0x510006,
     SMSG_HOUSING_DECOR_SET_EDIT_MODE_RESPONSE                       = 0x510000,
+    SMSG_HOUSING_DECOR_START_PLACING_NEW_DECOR_RESPONSE             = 0x51000B,
     SMSG_HOUSING_DECOR_SYSTEM_SET_DYE_SLOTS_RESPONSE                = 0x510008,
+    SMSG_HOUSING_EDITOR_AVAILABILITY_RESPONSE                       = 0x550008,
     SMSG_HOUSING_EXPORT_HOUSE_RESPONSE                              = 0x550003,
     SMSG_HOUSING_FIRST_TIME_DECOR_ACQUISITION                       = 0x51000A,
     SMSG_HOUSING_FIXTURE_CREATE_BASIC_HOUSE_RESPONSE                = 0x520001,
@@ -1667,6 +1728,8 @@ enum OpcodeServer : uint32
     SMSG_HOUSING_PHOTO_SHARING_AUTHORIZATION_RESULT                 = 0x42037B,
     SMSG_HOUSING_REDEEM_DEFERRED_DECOR_RESPONSE                     = 0x510009,
     SMSG_HOUSING_RESET_KIOSK_MODE_RESPONSE                          = 0x550007,
+    SMSG_HOUSING_SET_HOUSE_NAME_RESPONSE                            = 0x550005,
+    SMSG_HOUSING_UPDATE_HOUSE_INFO                                  = 0x550004,
     SMSG_HOUSING_ROOM_ADD_RESPONSE                                  = 0x530001,
     SMSG_HOUSING_ROOM_APPLY_COMPONENT_MATERIALS_RESPONSE            = 0x530005,
     SMSG_HOUSING_ROOM_REMOVE_RESPONSE                               = 0x530002,
@@ -1675,20 +1738,25 @@ enum OpcodeServer : uint32
     SMSG_HOUSING_ROOM_SET_DOOR_TYPE_RESPONSE                        = 0x530006,
     SMSG_HOUSING_ROOM_SET_LAYOUT_EDIT_MODE_RESPONSE                 = 0x530000,
     SMSG_HOUSING_ROOM_UPDATE_RESPONSE                               = 0x530003,
+    SMSG_HOUSING_SYSTEM_HOUSE_SNAPSHOT_RESPONSE                     = 0x550002,
     SMSG_HOUSING_SVCS_ACCEPT_NEIGHBORHOOD_OWNERSHIP_RESPONSE        = 0x540017,
     SMSG_HOUSING_SVCS_CANCEL_RELINQUISH_HOUSE_RESPONSE              = 0x540008,
     SMSG_HOUSING_SVCS_CHANGE_HOUSE_COSMETIC_OWNER                   = 0x540010,
     SMSG_HOUSING_SVCS_CLEAR_PLOT_RESERVATION_RESPONSE               = 0x540005,
     SMSG_HOUSING_SVCS_CREATE_CHARTER_NEIGHBORHOOD_RESPONSE          = 0x540003,
+    SMSG_HOUSING_SVCS_CREATE_NEIGHBORHOOD_RESPONSE                  = 0x540002,
     SMSG_HOUSING_SVCS_DELETE_ALL_NEIGHBORHOOD_INVITES_RESPONSE      = 0x540021,
+    SMSG_HOUSING_SVCS_GET_NEIGHBORHOOD_HOUSES_RESPONSE              = 0x54000D,
     SMSG_HOUSING_SVCS_GET_BNET_FRIEND_NEIGHBORHOODS_RESPONSE        = 0x54001E,
     SMSG_HOUSING_SVCS_GET_HOUSE_FINDER_INFO_RESPONSE                = 0x54001C,
     SMSG_HOUSING_SVCS_GET_HOUSE_FINDER_NEIGHBORHOOD_RESPONSE        = 0x54001D,
+    SMSG_HOUSING_SVCS_GET_NEIGHBORHOOD_DETAILS_RESPONSE             = 0x54000A,
     SMSG_HOUSING_SVCS_GET_PLAYER_HOUSES_INFO_RESPONSE               = 0x54000B,
     SMSG_HOUSING_SVCS_GET_POTENTIAL_HOUSE_OWNERS_RESPONSE           = 0x54001A,
     SMSG_HOUSING_SVCS_GUILD_ADD_HOUSE_NOTIFICATION                  = 0x540012,
     SMSG_HOUSING_SVCS_GUILD_APPEND_NEIGHBORHOOD_NOTIFICATION        = 0x540014,
     SMSG_HOUSING_SVCS_GUILD_CREATE_NEIGHBORHOOD_NOTIFICATION        = 0x540001,
+    SMSG_HOUSING_SVCS_HOUSE_EXPIRATION_NOTIFICATION                 = 0x540006,
     SMSG_HOUSING_SVCS_GUILD_GET_HOUSING_INFO_RESPONSE               = 0x540016,
     SMSG_HOUSING_SVCS_GUILD_REMOVE_HOUSE_NOTIFICATION               = 0x540013,
     SMSG_HOUSING_SVCS_GUILD_RENAME_NEIGHBORHOOD_NOTIFICATION        = 0x540015,
@@ -1696,18 +1764,27 @@ enum OpcodeServer : uint32
     SMSG_HOUSING_SVCS_NEIGHBORHOOD_OWNERSHIP_TRANSFERRED_RESPONSE   = 0x540019,
     SMSG_HOUSING_SVCS_NEIGHBORHOOD_RESERVE_PLOT_RESPONSE            = 0x540004,
     SMSG_HOUSING_SVCS_NOTIFY_PERMISSIONS_FAILURE                    = 0x540000,
+    SMSG_HOUSING_SVCS_MOVE_HOUSE_RESPONSE                           = 0x54000E,
     SMSG_HOUSING_SVCS_PLAYER_VIEW_HOUSES_RESPONSE                   = 0x54000C,
     SMSG_HOUSING_SVCS_REJECT_NEIGHBORHOOD_OWNERSHIP_RESPONSE        = 0x540018,
     SMSG_HOUSING_SVCS_RELINQUISH_HOUSE_RESPONSE                     = 0x540007,
+    SMSG_HOUSING_SVCS_SEARCH_NEIGHBORHOODS_RESPONSE                 = 0x540009,
+    SMSG_HOUSING_SVCS_SET_NEIGHBORHOOD_SETTINGS_RESPONSE            = 0x540022,
+    SMSG_HOUSING_SVCS_SWAP_PLOTS_RESPONSE                           = 0x54000F,
     SMSG_HOUSING_SVCS_UPDATE_HOUSES_LEVEL_FAVOR                     = 0x540011,
     SMSG_HOUSING_SVCS_UPDATE_HOUSE_SETTINGS_RESPONSE                = 0x54001B,
     SMSG_HOUSING_SVC_REQUEST_PLAYER_RELOAD_DATA                     = 0x540020,
     SMSG_INITIALIZE_FACTIONS                                        = 0x4201CC,
     SMSG_INITIAL_SETUP                                              = 0x420014,
+    SMSG_INITIATIVE_CHEST_RESULT                                    = 0x420380,
     SMSG_INITIATIVE_COMPLETE                                        = 0x420363,
+    SMSG_INITIATIVE_MILESTONE_UPDATE                                = 0x420381,
+    SMSG_INITIATIVE_POINTS_UPDATE                                   = 0x420382,
     SMSG_INITIATIVE_REWARD_AVAILABLE                                = 0x420368,
     SMSG_INITIATIVE_SERVICE_STATUS                                  = 0x420361,
     SMSG_INITIATIVE_TASK_COMPLETE                                   = 0x420362,
+    SMSG_INITIATIVE_TRACKED_UPDATED                                 = 0x420383,
+    SMSG_INITIATIVE_UPDATE_STATUS                                   = 0x42036D,
     SMSG_INIT_WORLD_STATES                                          = 0x4201EE,
     SMSG_INSPECT_RESULT                                             = 0x4200D9,
     SMSG_INSTANCE_ABANDON_VOTE_COMPLETED                            = 0x42009D,
@@ -2466,39 +2543,40 @@ enum OpcodeServer : uint32
     SMSG_ARENA_TEAM_STATS                                           = UNKNOWN_OPCODE,
 };
 
-inline constexpr std::size_t NUM_SMSG_OPCODES = 1638;
+inline constexpr std::size_t NUM_SMSG_OPCODES = 1646;
 
 inline constexpr std::ptrdiff_t GetOpcodeArrayIndex(OpcodeServer opcode)
 {
     uint32 idInGroup = opcode & 0xFFFF;
     switch (opcode >> 16)
     {
-        case 0x42: return idInGroup < 893 ? idInGroup +    0 : -1;
-        case 0x43: return idInGroup <   5 ? idInGroup +  893 : -1;
-        case 0x46: return idInGroup <  20 ? idInGroup +  898 : -1;
-        case 0x47: return idInGroup <  36 ? idInGroup +  918 : -1;
-        case 0x48: return idInGroup <  49 ? idInGroup +  954 : -1;
-        case 0x49: return idInGroup <  14 ? idInGroup + 1003 : -1;
-        case 0x4A: return idInGroup <  12 ? idInGroup + 1017 : -1;
-        case 0x4C: return idInGroup <  82 ? idInGroup + 1029 : -1;
-        case 0x4E: return idInGroup <  72 ? idInGroup + 1111 : -1;
-        case 0x50: return idInGroup <   2 ? idInGroup + 1183 : -1;
-        case 0x51: return idInGroup <  11 ? idInGroup + 1185 : -1;
-        case 0x52: return idInGroup <   8 ? idInGroup + 1196 : -1;
-        case 0x53: return idInGroup <   8 ? idInGroup + 1204 : -1;
-        case 0x54: return idInGroup <  35 ? idInGroup + 1212 : -1;
-        case 0x55: return idInGroup <   8 ? idInGroup + 1247 : -1;
-        case 0x56: return idInGroup <  34 ? idInGroup + 1255 : -1;
-        case 0x58: return idInGroup <   1 ? idInGroup + 1289 : -1;
-        case 0x5A: return idInGroup < 122 ? idInGroup + 1290 : -1;
-        case 0x5B: return idInGroup <   6 ? idInGroup + 1412 : -1;
-        case 0x5C: return idInGroup <  23 ? idInGroup + 1418 : -1;
-        case 0x5E: return idInGroup <   8 ? idInGroup + 1441 : -1;
-        case 0x5F: return idInGroup <  52 ? idInGroup + 1449 : -1;
-        case 0x60: return idInGroup <  41 ? idInGroup + 1501 : -1;
-        case 0x62: return idInGroup <  87 ? idInGroup + 1542 : -1;
-        case 0x63: return idInGroup <   8 ? idInGroup + 1629 : -1;
-        case 0x65: return idInGroup <   1 ? idInGroup + 1637 : -1;
+        case 0x2F: return idInGroup <   2 ? idInGroup +    0 : -1;
+        case 0x42: return idInGroup < 893 ? idInGroup +    2 : -1;
+        case 0x43: return idInGroup <   5 ? idInGroup +  895 : -1;
+        case 0x46: return idInGroup <  20 ? idInGroup +  900 : -1;
+        case 0x47: return idInGroup <  36 ? idInGroup +  920 : -1;
+        case 0x48: return idInGroup <  49 ? idInGroup +  956 : -1;
+        case 0x49: return idInGroup <  14 ? idInGroup + 1005 : -1;
+        case 0x4A: return idInGroup <  12 ? idInGroup + 1019 : -1;
+        case 0x4C: return idInGroup <  82 ? idInGroup + 1031 : -1;
+        case 0x4E: return idInGroup <  72 ? idInGroup + 1113 : -1;
+        case 0x50: return idInGroup <   2 ? idInGroup + 1185 : -1;
+        case 0x51: return idInGroup <  16 ? idInGroup + 1187 : -1;
+        case 0x52: return idInGroup <   8 ? idInGroup + 1203 : -1;
+        case 0x53: return idInGroup <   8 ? idInGroup + 1211 : -1;
+        case 0x54: return idInGroup <  35 ? idInGroup + 1219 : -1;
+        case 0x55: return idInGroup <   9 ? idInGroup + 1254 : -1;
+        case 0x56: return idInGroup <  34 ? idInGroup + 1263 : -1;
+        case 0x58: return idInGroup <   1 ? idInGroup + 1297 : -1;
+        case 0x5A: return idInGroup < 122 ? idInGroup + 1298 : -1;
+        case 0x5B: return idInGroup <   6 ? idInGroup + 1420 : -1;
+        case 0x5C: return idInGroup <  23 ? idInGroup + 1426 : -1;
+        case 0x5E: return idInGroup <   8 ? idInGroup + 1449 : -1;
+        case 0x5F: return idInGroup <  52 ? idInGroup + 1457 : -1;
+        case 0x60: return idInGroup <  41 ? idInGroup + 1509 : -1;
+        case 0x62: return idInGroup <  87 ? idInGroup + 1550 : -1;
+        case 0x63: return idInGroup <   8 ? idInGroup + 1637 : -1;
+        case 0x65: return idInGroup <   1 ? idInGroup + 1645 : -1;
         default: return -1;
     }
 }

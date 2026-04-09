@@ -1948,14 +1948,19 @@ struct HousingRoomComponentMeshData : public IsUpdateFieldStructureTag, public H
 
 struct HousingPlayerHouseData : public IsUpdateFieldStructureTag, public HasChangesMask<10>
 {
+    // IDA-verified wire order: must match client struct layout (72 bytes, 8 internal + 64 wire).
+    // Client struct offsets: +8=BnetAccount, +24=PlotIndex(def -1), +28=Level(def 1),
+    // +32=Favor, +40=Interior, +44=Exterior, +48=Room, +52=Fixture, +56=EntityGUID.
+    // HOUSE_LEVEL_CHANGED event pushes: level, interior, exterior, room, fixture.
+    // HouseType and HouseSize do NOT exist in this fragment.
     UpdateField<ObjectGuid, 0, 1> BnetAccount;
     UpdateField<int32, 0, 2> PlotIndex;
     UpdateField<uint32, 0, 3> Level;
     UpdateField<uint64, 0, 4> Favor;
     UpdateField<uint32, 0, 5> InteriorDecorPlacementBudget;
     UpdateField<uint32, 0, 6> ExteriorDecorPlacementBudget;
-    UpdateField<uint32, 0, 7> ExteriorFixtureBudget;
-    UpdateField<uint32, 0, 8> RoomPlacementBudget;
+    UpdateField<uint32, 0, 7> RoomPlacementBudget;
+    UpdateField<uint32, 0, 8> ExteriorFixtureBudget;
     UpdateField<ObjectGuid, 0, 9> EntityGUID;
 
     using OwnerObject = BaseEntity;

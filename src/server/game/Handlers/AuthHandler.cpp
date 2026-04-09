@@ -151,16 +151,39 @@ void WorldSession::SendFeatureSystemStatusGlueScreen()
         { "bpayStoreEnable"sv, "0"sv },
         { "recentAlliesEnabledClient"sv, "0"sv },
         { "browserEnabled"sv, "0"sv },
-        { "housingEnableCreateGuildNeighborhood"sv, "0"sv },
-        { "housingEnableDeleteHouse"sv, "0"sv },
-        { "housingServiceEnabled"sv, "0"sv },
-        { "housingEnableMoveHouse"sv, "0"sv },
-        { "housingEnableCreateCharterNeighborhood"sv, "0"sv },
-        { "housingEnableBuyHouse"sv, "0"sv },
-        { "housingMarketEnabled"sv, "0"sv },
+        // Housing game rules ? ALL values verified against 12.0.1.65940 sniff packet data (Feb 2026)
+        // Service & feature flags (read from config, default true)
+        { "performHousingExpansionCheckClient"sv, "1"sv },
+        { "housingServiceEnabled"sv, "1"sv },
+        { "housingEnableBuyHouse"sv, sWorld->getBoolConfig(CONFIG_HOUSING_ENABLE_BUY_HOUSE) ? "1"sv : "0"sv },
+        { "housingEnableDeleteHouse"sv, sWorld->getBoolConfig(CONFIG_HOUSING_ENABLE_DELETE_HOUSE) ? "1"sv : "0"sv },
+        { "housingEnableMoveHouse"sv, sWorld->getBoolConfig(CONFIG_HOUSING_ENABLE_MOVE_HOUSE) ? "1"sv : "0"sv },
+        { "housingEnableCreateCharterNeighborhood"sv, sWorld->getBoolConfig(CONFIG_HOUSING_ENABLE_CREATE_CHARTER_NEIGHBORHOOD) ? "1"sv : "0"sv },
+        { "housingEnableCreateGuildNeighborhood"sv, sWorld->getBoolConfig(CONFIG_HOUSING_ENABLE_CREATE_GUILD_NEIGHBORHOOD) ? "1"sv : "0"sv },
+        // Market
+        { "housingMarketEnabled"sv, "1"sv },
+        { "housingMarketShopEnabled"sv, "1"sv },
+        { "housingMarketCartFullRemoveEnabled"sv, "1"sv },
+        // Neighborhood & exterior
+        { "housingExteriorTypeByNeighborhoodFactionRestriction"sv, "1"sv },
+        { "minNeighborhoodGroupMembers"sv, "3"sv },
+        // Decoration limits
+        { "housingBasicDecor_MaxPreviewLimit"sv, "100"sv },
+        { "housingCatalog_CartSizeLimit"sv, "20"sv },
+        // Decor scale limits
+        { "housingExpertDecor_Scale_Indoor_Min"sv, "0.200000"sv },
+        { "housingExpertDecor_Scale_Indoor_Max"sv, "2.000000"sv },
+        { "housingExpertDecor_Scale_Outdoor_Min"sv, "0.200000"sv },
+        { "housingExpertDecor_Scale_Outdoor_Max"sv, "2.000000"sv },
+        // Screenshot report thresholds
+        { "housingDecorReportScreenshotFacingDotThreshold"sv, "0.500000"sv },
+        { "housingDecorReportScreenshotDistanceThreshold"sv, "150.000000"sv },
     };
 
     WorldPackets::System::MirrorVars variables;
     variables.Variables = vars;
     SendPacket(variables.Write());
+
+    TC_LOG_INFO("housing", "<<< SMSG_MIRROR_VARS sent: housingServiceEnabled=1, MaxExpansionLevel={}, AccountExpansion={}",
+        sWorld->getIntConfig(CONFIG_EXPANSION), GetAccountExpansion());
 }

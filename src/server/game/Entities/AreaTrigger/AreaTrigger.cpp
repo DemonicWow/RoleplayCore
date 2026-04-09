@@ -77,6 +77,18 @@ void AreaTrigger::AddToWorld()
             GetMap()->GetAreaTriggerBySpawnIdStore().insert(std::make_pair(_spawnId, this));
 
         WorldObject::AddToWorld();
+
+        // Housing AT debug logging ? critical for diagnosing OutsidePlotBounds
+        if (m_housingPlotAreaTriggerData.has_value())
+        {
+            ObjectGuid ownerGuid = m_housingPlotAreaTriggerData->HouseOwnerGUID;
+            TC_LOG_DEBUG("housing", "AreaTrigger::AddToWorld: AT {} entry {} pos ({:.1f}, {:.1f}, {:.1f}) "
+                "map={} ? HousingPlot: PlotID={} OwnerGUID={}",
+                GetGUID().ToString(), GetEntry(),
+                GetPositionX(), GetPositionY(), GetPositionZ(), GetMapId(),
+                uint32(m_housingPlotAreaTriggerData->PlotID),
+                ownerGuid.ToString());
+        }
     }
 }
 
@@ -114,7 +126,7 @@ void AreaTrigger::PlaySpellVisual(uint32 spellVisualId) const
     SendMessageToSet(packet.Write(), false);
 }
 
-bool AreaTrigger::Create(AreaTriggerCreatePropertiesId areaTriggerCreatePropertiesId, Map* map, Position const& pos, int32 duration, AreaTriggerSpawn const* spawnData /*= nullptr*/, Unit* caster /*= nullptr*/, Unit* target /*= nullptr*/, SpellCastVisual spellVisual /*= { 0, 0 }*/, SpellInfo const* spellInfo /*= nullptr*/, Spell* spell /*= nullptr*/, AuraEffect const* aurEff /*= nullptr*/)
+bool AreaTrigger::Create(AreaTriggerCreatePropertiesId areaTriggerCreatePropertiesId, Map* map, Position const& pos, int32 duration, AreaTriggerSpawn const* spawnData /*= nullptr*/, Unit* caster /*= nullptr*/, Unit* target /*= nullptr*/, SpellCastVisual spellVisual /*= { 0, 0 }*/, SpellInfo const* spellInfo /*= nullptr*/, Spell* spell /*= nullptr*/, AuraEffect const* aurEff /*= nullptr*/, bool addToMap /*= true*/)
 {
     _targetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
     _aurEff = aurEff;
@@ -288,7 +300,7 @@ bool AreaTrigger::Create(AreaTriggerCreatePropertiesId areaTriggerCreateProperti
     if (HasOrbit())
         Relocate(CalculateOrbitPosition());
 
-    if (!IsStaticSpawn())
+    if (!IsStaticSpawn() && addToMap)
     {
         if (!GetMap()->AddToMap(this))
         {
@@ -318,6 +330,102 @@ AreaTrigger* AreaTrigger::CreateAreaTrigger(AreaTriggerCreatePropertiesId areaTr
 
     return at;
 }
+
+AreaTrigger* AreaTrigger::CreateStaticAreaTrigger(AreaTriggerCreatePropertiesId areaTriggerCreatePropertiesId, Map* map, Position const& pos, int32 duration /*= -1*/, bool addToMap /*= true*/)
+{
+    AreaTrigger* at = new AreaTrigger();
+    if (!at->Create(areaTriggerCreatePropertiesId, map, pos, duration, nullptr, nullptr, nullptr, { 0, 0 }, nullptr, nullptr, nullptr, addToMap))
+    {
+        delete at;
+        return nullptr;
+    }
+
+    return at;
+}
+
+void AreaTrigger::InitHousingPlotData(uint32 plotId, ObjectGuid ownerGuid, ObjectGuid houseGuid, ObjectGuid ownerBnetGuid)
+{
+    if (m_housingPlotAreaTriggerData.has_value())
+        return;
+
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::PlotID), plotId);
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseOwnerGUID), ownerGuid);
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseGUID), houseGuid);
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseOwnerBnetAccountGUID), ownerBnetGuid);
+
+    m_entityFragments.Add(WowCS::EntityFragment::FHousingPlotAreaTrigger_C, IsInWorld(),
+        WowCS::GetRawFragmentData(m_housingPlotAreaTriggerData));
+
+    // Force SpellForVisuals=1282351 and SpellXSpellVisualID=510142 for housing plot ATs.
+    // Spell 1282351 doesn't exist in sSpellMgr (AreaTriggerDataStore resets SpellForVisuals
+    // to 0 during load, and the normal SpellXSpellVisualID lookup in _InitFields fails).
+    // The client requires BOTH values to properly identify the AT as a housing plot boundary:
+    //   - SpellForVisuals=1282351: marks the AT as a housing plot AT
+    //   - SpellXSpellVisualID=510142: retail-sniff-verified visual ID, required for
+    //     the client's plot boundary decal and placement validation system
+    // Without SpellXSpellVisualID=510142, the client fires OutsidePlotBounds on every
+    // decor placement attempt despite the AT having correct box extents.
+    {
+        auto areaTriggerData = m_values.ModifyValue(&AreaTrigger::m_areaTriggerData);
+        if (*m_areaTriggerData->SpellForVisuals == 0)
+            SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::SpellForVisuals), int32(1282351));
+        if (m_areaTriggerData->SpellVisual->SpellXSpellVisualID == 0)
+            SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::SpellVisual).ModifyValue(&UF::SpellCastVisual::SpellXSpellVisualID), int32(510142));
+    }
+
+    // Set PeriodModifier to match retail: Field_0=0, Field_4=1.0f.
+    // Retail sniff-verified: ALL housing plot ATs have PeriodModifier=(0, 1.0).
+    // Without this, the client may fail the AABB bounds lookup for decor placement.
+    {
+        auto areaTriggerData = m_values.ModifyValue(&AreaTrigger::m_areaTriggerData);
+        SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::PeriodModifier)
+            .ModifyValue(&UF::AreaTriggerActionSetPeriodModifier::Field_0), int32(0));
+        SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::PeriodModifier)
+            .ModifyValue(&UF::AreaTriggerActionSetPeriodModifier::Field_4), 1.0f);
+    }
+
+    // Set ExtraScaleCurve to match retail: ParameterCurve=0x3F800001, OverrideActive=true.
+    // Sniff-verified across 6 instances in builds 66102/66263 ? all housing plot ATs
+    // have this exact ExtraScaleCurve configuration (all other curve fields remain zero).
+    // This tells the client to flatten the terrain and remove grass within the plot
+    // boundary, preparing the surface for decor placement.
+    {
+        auto areaTriggerData = m_values.ModifyValue(&AreaTrigger::m_areaTriggerData);
+        SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::ExtraScaleCurve)
+            .ModifyValue(&UF::ScaleCurve::ParameterCurve), uint32(0x3F800001));
+        SetUpdateFieldValue(areaTriggerData.ModifyValue(&UF::AreaTriggerData::ExtraScaleCurve)
+            .ModifyValue(&UF::ScaleCurve::OverrideActive), true);
+    }
+
+    TC_LOG_ERROR("housing", "AreaTrigger::InitHousingPlotData: AT {} plot={} owner={} houseGuid={} bnetGuid={}"
+        " | SpellForVisuals={} SpellXSpellVisualID={} DecalPropertiesID={}"
+        " | ShapeType={} BoundsRadius2D={:.2f} PeriodModifier=({},{})"
+        " | Pos=({:.1f},{:.1f},{:.1f},{:.3f})",
+        GetGUID().ToString(), plotId, ownerGuid.ToString(), houseGuid.ToString(), ownerBnetGuid.ToString(),
+        *m_areaTriggerData->SpellForVisuals, m_areaTriggerData->SpellVisual->SpellXSpellVisualID,
+        *m_areaTriggerData->DecalPropertiesID,
+        *m_areaTriggerData->ShapeType, *m_areaTriggerData->BoundsRadius2D,
+        *m_areaTriggerData->PeriodModifier->Field_0, *m_areaTriggerData->PeriodModifier->Field_4,
+        GetPositionX(), GetPositionY(), GetPositionZ(), GetOrientation());
+}
+
+void AreaTrigger::UpdateHousingPlotOwnerData(ObjectGuid ownerGuid, ObjectGuid houseGuid, ObjectGuid ownerBnetGuid)
+{
+    if (!m_housingPlotAreaTriggerData.has_value())
+        return;
+
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseOwnerGUID), ownerGuid);
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseGUID), houseGuid);
+    SetUpdateFieldValue(m_values.ModifyValue(&AreaTrigger::m_housingPlotAreaTriggerData, 0)
+        .ModifyValue(&UF::HousingPlotAreaTriggerData::HouseOwnerBnetAccountGUID), ownerBnetGuid);
+}
+
 
 ObjectGuid AreaTrigger::CreateNewMovementForceId(Map* map, uint32 areaTriggerId)
 {
@@ -898,9 +1006,9 @@ void AreaTrigger::HandleUnitEnter(Unit* unit)
             ChatHandler(player->GetSession()).PSendSysMessage(LANG_DEBUG_AREATRIGGER_ENTITY_ENTERED, GetEntry(), IsCustom(), IsStaticSpawn(), _spawnId);
 
         player->UpdateQuestObjectiveProgress(QUEST_OBJECTIVE_AREA_TRIGGER_ENTER, GetEntry(), 1);
-
-        if (GetTemplate() && GetTemplate()->ActionSetId)
-            player->UpdateCriteria(CriteriaType::EnterAreaTriggerWithActionSet, GetTemplate()->ActionSetId);
+        if (AreaTriggerTemplate const* areaTriggerTemplate = GetTemplate())
+            if (areaTriggerTemplate->ActionSetId)
+                player->UpdateCriteria(CriteriaType::EnterAreaTriggerWithActionSet, areaTriggerTemplate->ActionSetId);
     }
 
     DoActions(unit);
@@ -930,8 +1038,9 @@ void AreaTrigger::HandleUnitExitInternal(Unit* unit, AreaTriggerExitReason exitM
         {
             player->UpdateQuestObjectiveProgress(QUEST_OBJECTIVE_AREA_TRIGGER_EXIT, GetEntry(), 1);
 
-            if (GetTemplate() && GetTemplate()->ActionSetId)
-                player->UpdateCriteria(CriteriaType::LeaveAreaTriggerWithActionSet, GetTemplate()->ActionSetId);
+            if (AreaTriggerTemplate const* areaTriggerTemplate = GetTemplate())
+                if (areaTriggerTemplate->ActionSetId)
+                    player->UpdateCriteria(CriteriaType::LeaveAreaTriggerWithActionSet, areaTriggerTemplate->ActionSetId);
         }
     }
 
@@ -1519,6 +1628,25 @@ void AreaTrigger::BuildValuesCreate(UF::UpdateFieldFlag flags, ByteBuffer& data,
 {
     m_objectData->WriteCreate(flags, data, target, this);
     m_areaTriggerData->WriteCreate(flags, data, target, this);
+
+    // Housing AT fragment verification ? log fields that the client reads for IsInsidePlot()
+    if (m_housingPlotAreaTriggerData.has_value())
+    {
+        ObjectGuid ownerGuid = m_housingPlotAreaTriggerData->HouseOwnerGUID;
+        ObjectGuid houseGuid = m_housingPlotAreaTriggerData->HouseGUID;
+        ObjectGuid bnetGuid = m_housingPlotAreaTriggerData->HouseOwnerBnetAccountGUID;
+        TC_LOG_DEBUG("housing", "AreaTrigger::BuildValuesCreate: AT {} ? target {} ? "
+            "FHousingPlotAreaTrigger_C: PlotID={} OwnerGUID={} HouseGUID={} BnetGUID={} | "
+            "ATData: SpellForVisuals={} DecalPropertiesID={} SpellID={} BoundsRadius2D={:.1f}",
+            GetGUID().ToString(),
+            target ? target->GetGUID().ToString() : "broadcast",
+            uint32(m_housingPlotAreaTriggerData->PlotID),
+            ownerGuid.ToString(), houseGuid.ToString(), bnetGuid.ToString(),
+            int32(m_areaTriggerData->SpellForVisuals),
+            uint32(m_areaTriggerData->DecalPropertiesID),
+            int32(m_areaTriggerData->SpellID),
+            float(m_areaTriggerData->BoundsRadius2D));
+    }
 }
 
 void AreaTrigger::BuildValuesUpdate(UF::UpdateFieldFlag flags, ByteBuffer& data, Player const* target) const
@@ -1574,6 +1702,7 @@ void AreaTrigger::ValuesUpdateForPlayerWithMaskSender::operator()(Player const* 
 void AreaTrigger::ClearValuesChangesMask()
 {
     m_values.ClearChangesMask(&AreaTrigger::m_areaTriggerData);
+    m_values.ClearChangesMask(&AreaTrigger::m_housingPlotAreaTriggerData);
     WorldObject::ClearValuesChangesMask();
 }
 
