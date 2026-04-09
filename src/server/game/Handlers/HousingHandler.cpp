@@ -2358,19 +2358,10 @@ void WorldSession::HandleHousingRoomAdd(WorldPackets::Housing::HousingRoomAdd co
                         newGridX = room.GridX;
                         newGridY = room.GridY + static_cast<int32>(sourceDoorOffset - newDoorOffset);
                     }
-                    // Check if the new room is a stairwell — place on a different floor
-                    HouseRoomData const* newRoomData = sHousingMgr.GetHouseRoomData(housingRoomAdd.HouseRoomID);
-                    if (newRoomData && newRoomData->HasStairs())
-                    {
-                        // Stairwell: same grid position as source, but FloorIndex+1
-                        newGridX = room.GridX;
-                        newGridY = room.GridY;
-                        newFloorIndex = room.FloorIndex + 1;
-                    }
-                    else
-                    {
-                        newFloorIndex = room.FloorIndex; // same floor as source
-                    }
+                    // Stairwell rooms are placed ADJACENT on the SAME floor like any
+                    // other room. The stairwell extends vertically (geobox Z=-1 to 14).
+                    // Only rooms placed at the stairwell's CEILING door go to floor+1.
+                    newFloorIndex = room.FloorIndex;
                     goto foundDoor;
                 }
             }
@@ -2418,7 +2409,8 @@ void WorldSession::HandleHousingRoomAdd(WorldPackets::Housing::HousingRoomAdd co
                     {
                         if (c.ID == housingRoomAdd.TargetDoorComponentID)
                         {
-                            // Replace wall → doorway visuals
+                            // Replace wall with doorway — stairwell rooms connect
+                            // HORIZONTALLY through walls, same as any other room.
                             interiorMap->ReplaceWallWithDoorway(guid, housingRoomAdd.TargetDoorComponentID,
                                 faction, rm, newRoomGuid);
                             // Update door connection data
@@ -2643,10 +2635,28 @@ void WorldSession::HandleHousingRoomApplyComponentMaterials(WorldPackets::Housin
         {
             int32 faction = (player->GetTeamId() == TEAM_ALLIANCE)
                 ? NEIGHBORHOOD_FACTION_ALLIANCE : NEIGHBORHOOD_FACTION_HORDE;
-            auto const& rooms = housing->GetRoomsMap();
-            auto roomItr = rooms.find(housingRoomApplyComponentMaterials.RoomGuid);
-            if (roomItr != rooms.end())
-                interiorMap->UpdateRoomComponentVisuals(housingRoomApplyComponentMaterials.RoomGuid, faction, roomItr->second);
+            // Directly update the specific component MeshObjects' textureID.
+            // Don't use UpdateRoomComponentVisuals (which reads room.WallpaperId).
+            int32 textureID = (housingRoomApplyComponentMaterials.RoomComponentTextureID == 0xFFFFFFFF)
+                ? 0 : static_cast<int32>(housingRoomApplyComponentMaterials.RoomComponentTextureID);
+            auto meshItr = interiorMap->GetRoomMeshObjects().find(housingRoomApplyComponentMaterials.RoomGuid);
+            if (meshItr != interiorMap->GetRoomMeshObjects().end())
+            {
+                for (ObjectGuid const& meshGuid : meshItr->second)
+                {
+                    MeshObject* mesh = interiorMap->GetMeshObject(meshGuid);
+                    if (!mesh) continue;
+                    int32 compID = mesh->GetRoomComponentID();
+                    bool match = housingRoomApplyComponentMaterials.RoomComponentIDs.empty();
+                    for (uint32 cid : housingRoomApplyComponentMaterials.RoomComponentIDs)
+                        if (static_cast<int32>(cid) == compID) { match = true; break; }
+                    if (match && compID != 0)
+                        mesh->UpdateRoomComponentVisuals(
+                            mesh->GetRoomComponentOptionID(),
+                            mesh->GetHouseThemeID(),
+                            textureID);
+                }
+            }
         }
     }
 
