@@ -65,7 +65,7 @@ HouseInteriorMap::HouseInteriorMap(uint32 id, time_t expiry, uint32 instanceId, 
     }
     else
     {
-        TC_LOG_INFO("housing", "HouseInteriorMap::CTOR: No NeighborhoodMap DB2 entry for map {} ? "
+        TC_LOG_INFO("housing", "HouseInteriorMap::CTOR: No NeighborhoodMap DB2 entry for map {} — "
             "using default origin ({:.1f}, {:.1f}, {:.1f})",
             id, _originX, _originY, _originZ);
     }
@@ -112,7 +112,7 @@ void HouseInteriorMap::SpawnRoomMeshObjects(Housing* housing, int32 factionRestr
     if (rooms.empty())
     {
         TC_LOG_ERROR("housing", "HouseInteriorMap::SpawnRoomMeshObjects: No rooms to spawn for owner {} "
-            "(new house ? rooms will appear when placed via editor)",
+            "(new house — rooms will appear when placed via editor)",
             _owner.ToString());
         return;
     }
@@ -120,7 +120,7 @@ void HouseInteriorMap::SpawnRoomMeshObjects(Housing* housing, int32 factionRestr
     int32 factionThemeID = sHousingMgr.GetFactionDefaultThemeID(factionRestriction);
     uint32 totalMeshes = 0;
 
-    // Build position?GUID mapping for door connection resolution.
+    // Build position→GUID mapping for door connection resolution.
     // Key encodes yard position: (gridX+10000)*100000 + (gridY+10000)
     auto posKey = [](int32 gx, int32 gy) -> uint64 { return uint64(gx + 10000) * 100000ULL + uint64(gy + 10000); };
     std::unordered_map<uint64, ObjectGuid> posToRoomGuid;
@@ -168,10 +168,10 @@ void HouseInteriorMap::SpawnRoomMeshObjects(Housing* housing, int32 factionRestr
 
         // --- DB2 lookups ---
 
-        // 1. HouseRoom ? RoomWmoDataID
+        // 1. HouseRoom → RoomWmoDataID
         int32 roomWmoDataID = roomData->RoomWmoDataID;
 
-        // 2. RoomWmoData ? Geobox bounds (bounding box for OutsidePlotBounds check)
+        // 2. RoomWmoData → Geobox bounds (bounding box for OutsidePlotBounds check)
         float geoMinX = -35.0f, geoMinY = -30.0f, geoMinZ = -1.01f;
         float geoMaxX =  35.0f, geoMaxY =  30.0f, geoMaxZ = 125.01f;
         RoomWmoDataEntry const* wmoData = roomWmoDataID ? sRoomWmoDataStore.LookupEntry(roomWmoDataID) : nullptr;
@@ -237,7 +237,7 @@ void HouseInteriorMap::SpawnRoomMeshObjects(Housing* housing, int32 factionRestr
         // --- Phase 1: Create HousingRoomEntity FIRST ---
         // Must exist on the map BEFORE component MeshObjects because components use
         // AttachParentGUID = roomHousingGuid. The client resolves this GUID during
-        // entity creation ? if the parent doesn't exist, it crashes (NULL+0x20).
+        // entity creation — if the parent doesn't exist, it crashes (NULL+0x20).
         // Door data is added after components are created (Phase 3).
         HousingRoomEntity* housingRoom = new HousingRoomEntity();
         PhasingHandler::InitDbPhaseShift(housingRoom->GetPhaseShift(), PHASE_USE_FLAGS_ALWAYS_VISIBLE, 0, 0);
@@ -266,12 +266,12 @@ void HouseInteriorMap::SpawnRoomMeshObjects(Housing* housing, int32 factionRestr
         {
 
             // Look up RoomComponentOption for this component via MeshStyleFilterID.
-            // Alliance sniff-verified: ALL components use faction theme (1=Folk ? sub-theme 6).
-            // Horde uses theme 2 (Rugged ? sub-theme 8). Each faction uses its OWN wall models.
+            // Alliance sniff-verified: ALL components use faction theme (1=Folk → sub-theme 6).
+            // Horde uses theme 2 (Rugged → sub-theme 8). Each faction uses its OWN wall models.
             // Component position/rotation: local to room entity
             Position compPos(comp.OffsetPos[0], comp.OffsetPos[1], comp.OffsetPos[2], 0.0f);
             QuaternionData compRot;
-            // DB2 OffsetRot is in DEGREES ? convert to radians. Z is negated (sniff-verified).
+            // DB2 OffsetRot is in DEGREES — convert to radians. Z is negated (sniff-verified).
             static constexpr float DEG_TO_RAD = static_cast<float>(M_PI / 180.0);
             float rx = comp.OffsetRot[0] * DEG_TO_RAD;
             float ry = comp.OffsetRot[1] * DEG_TO_RAD;
@@ -476,7 +476,7 @@ void HouseInteriorMap::DespawnAllRoomMeshObjects()
 
     // Use immediate removal (RemoveFromMap) instead of deferred (AddObjectToRemoveList).
     // Deferred removal causes client crashes when new entities are created in the same
-    // update cycle ? the client sees overlapping CREATE/DESTROY for the same GUIDs.
+    // update cycle — the client sees overlapping CREATE/DESTROY for the same GUIDs.
     for (auto& [roomGuid, meshGuids] : _roomMeshObjects)
     {
         for (ObjectGuid const& meshGuid : meshGuids)
@@ -489,7 +489,7 @@ void HouseInteriorMap::DespawnAllRoomMeshObjects()
         }
     }
 
-    // Also despawn HousingRoomEntities ? they must be removed before
+    // Also despawn HousingRoomEntities — they must be removed before
     // SpawnRoomMeshObjects recreates them with the same GUIDs.
     for (HousingRoomEntity* roomEntity : _roomEntities)
     {
@@ -712,7 +712,7 @@ void HouseInteriorMap::UpdateRoomComponentVisuals(ObjectGuid roomGuid, int32 fac
         if (!optEntry)
             continue;
 
-        int32 textureID = (room.WallpaperId != 0)
+        int32 textureID = (room.WallpaperId != 0 && room.WallpaperId != 0xFFFFFFFF)
             ? static_cast<int32>(room.WallpaperId)
             : sHousingMgr.GetTextureIdForComponentOption(static_cast<int32>(optEntry->ID));
 
@@ -737,7 +737,7 @@ void HouseInteriorMap::SpawnInteriorDecor(Housing* housing)
     uint32 exteriorSkipped = 0;
     uint32 totalDecor = uint32(housing->GetPlacedDecorMap().size());
 
-    TC_LOG_ERROR("housing", "HouseInteriorMap::SpawnInteriorDecor: Starting ? totalDecor={} "
+    TC_LOG_ERROR("housing", "HouseInteriorMap::SpawnInteriorDecor: Starting — totalDecor={} "
         "_roomMeshObjects entries={} owner={}",
         totalDecor, uint32(_roomMeshObjects.size()), _owner.ToString());
 
@@ -905,16 +905,47 @@ void HouseInteriorMap::SpawnSingleInteriorDecor(Housing::PlacedDecor const& deco
 
     // Decor attaches to the HousingRoomEntity (Housing/2 GUID), not a MeshObject.
     // Sniff-verified: retail decor AttachParentGUID = Housing/1 (room entity GUID).
-    ObjectGuid roomEntityGuid = decor.RoomGuid; // Housing/2 GUID
+    ObjectGuid roomEntityGuid = decor.RoomGuid;
     Position roomWorldPos;
-    // Find the room's world position from its grid coordinates
-    for (Housing::Room const* rm : GetOwnerHousing() ? GetOwnerHousing()->GetRooms() : std::vector<Housing::Room const*>{})
+
+    // If decor has no RoomGuid (placed before room entity system), auto-assign
+    // to the first non-base room. Without a valid parent, decor is not selectable.
+    Housing* ownerHousing = GetOwnerHousing();
+    if (roomEntityGuid.IsEmpty() && ownerHousing)
     {
-        if (rm->Guid == decor.RoomGuid)
+        for (Housing::Room const* rm : ownerHousing->GetRooms())
         {
-            roomWorldPos = Position(_originX + static_cast<float>(rm->GridX),
-                                    _originY + static_cast<float>(rm->GridY), _originZ, 0.0f);
-            break;
+            HouseRoomData const* rd = sHousingMgr.GetHouseRoomData(rm->RoomEntryId);
+            if (rd && !rd->IsBaseRoom())
+            {
+                roomEntityGuid = rm->Guid;
+                break;
+            }
+        }
+        // Last resort: use the base room
+        if (roomEntityGuid.IsEmpty())
+        {
+            for (Housing::Room const* rm : ownerHousing->GetRooms())
+            {
+                roomEntityGuid = rm->Guid;
+                break;
+            }
+        }
+    }
+
+    // Find the room's world position from its grid coordinates
+    if (ownerHousing)
+    {
+        for (Housing::Room const* rm : ownerHousing->GetRooms())
+        {
+            if (rm->Guid == roomEntityGuid)
+            {
+                static constexpr float FLOOR_HEIGHT = 7.0f;
+                roomWorldPos = Position(_originX + static_cast<float>(rm->GridX),
+                                        _originY + static_cast<float>(rm->GridY),
+                                        _originZ + static_cast<float>(rm->FloorIndex) * FLOOR_HEIGHT, 0.0f);
+                break;
+            }
         }
     }
 
@@ -923,7 +954,7 @@ void HouseInteriorMap::SpawnSingleInteriorDecor(Housing::PlacedDecor const& deco
 
     QuaternionData rot(decor.RotationX, decor.RotationY, decor.RotationZ, decor.RotationW);
 
-    // Convert world ? local with inverse rotation of the room entity's facing.
+    // Convert world → local with inverse rotation of the room entity's facing.
     float localX = worldX, localY = worldY, localZ = worldZ;
     if (!roomEntityGuid.IsEmpty())
     {
@@ -1093,7 +1124,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
             // Spawn room meshes on first entry
             if (player->GetGUID() == _owner)
             {
-                // Always force a fresh spawn on login ? old entities from a previous binary/session
+                // Always force a fresh spawn on login — old entities from a previous binary/session
                 // may have stale fragment formats (e.g., root MeshObjects with FHousingRoom_C that
                 // no longer exist in the current code). DespawnAll is safe here because the player
                 // hasn't received any entities yet (no DESTROY goes to the client).
@@ -1170,7 +1201,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
                         return;
 
                     // ENTER_PLOT is sent AFTER the AT CREATE in step 8 below.
-                    // The sequence is: AT CREATE ? ENTER_PLOT ? re-send Status+Perms.
+                    // The sequence is: AT CREATE → ENTER_PLOT → re-send Status+Perms.
                     // ENTER_PLOT fires HOUSE_PLOT_ENTERED (FrameScript event 1073) which
                     // loads Blizzard_HousingControls. The handler resets editor state, so
                     // Status+Perms are re-sent afterward to re-establish context.
@@ -1241,7 +1272,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
                     // 7) Create AND send the interior plot AreaTrigger LAST.
                     // The AT must be created here (not in pre-spawn) because if it's
                     // on the map during AddPlayerToMap, the visibility system includes
-                    // it in the initial UPDATE_OBJECT ? before Status+Permissions.
+                    // it in the initial UPDATE_OBJECT — before Status+Permissions.
                     // Retail sends the AT in a separate UPDATE_OBJECT (#11752) AFTER
                     // the main entity data. The client fires HOUSE_PLOT_ENTERED on AT
                     // receipt and immediately checks IsHouseEditorStatusAvailable(),
@@ -1285,7 +1316,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
                                     plotAt->GetGUID().ToString(), atX, atY, atZ,
                                     housing->GetPlotIndex(), playerGuid.ToString());
 
-                                // 8) Plot enter spell packets ? same as exterior AT overlap.
+                                // 8) Plot enter spell packets — same as exterior AT overlap.
                                 // Sniff-verified: exterior sends 3 spell+aura sequences
                                 // (1239847@slot50, 469226@slot56, 1266699@slot9) before
                                 // ENTER_PLOT. These trigger editor availability on the client.
@@ -1336,7 +1367,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
                                         playerGuid.ToString());
                                 }
 
-                                // 9) ENTER_PLOT ? fires HOUSE_PLOT_ENTERED on the client.
+                                // 9) ENTER_PLOT — fires HOUSE_PLOT_ENTERED on the client.
                                 // The client handler (NeighborhoodSystem vtable[22]) signals
                                 // FrameScript event 1073, which dispatches to all UI frames
                                 // with OnEvent handlers, triggering the HOUSE_PLOT_ENTERED
@@ -1385,7 +1416,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
                         }
                     }
 
-                    TC_LOG_ERROR("housing", "HouseInteriorMap deferred: Complete ? "
+                    TC_LOG_ERROR("housing", "HouseInteriorMap deferred: Complete — "
                         "HouseInfo+Status+Perms+Auras+Account+Initiative+PlotAT+ENTER_PLOT+Door for {}",
                         playerGuid.ToString());
                 }, Milliseconds(500));
@@ -1393,7 +1424,7 @@ bool HouseInteriorMap::AddPlayerToMap(Player* player, bool initPlayer /*= true*/
         }
         else
         {
-            TC_LOG_ERROR("housing", "HouseInteriorMap::AddPlayerToMap: NO HOUSING for player {} ? "
+            TC_LOG_ERROR("housing", "HouseInteriorMap::AddPlayerToMap: NO HOUSING for player {} — "
                 "cannot spawn rooms/decor", player->GetGUID().ToString());
         }
 

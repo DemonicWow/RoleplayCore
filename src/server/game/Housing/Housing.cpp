@@ -34,7 +34,7 @@
 #include <queue>
 #include <unordered_set>
 
-// Global DB ID generators ? initialized from MAX(id) at server startup
+// Global DB ID generators — initialized from MAX(id) at server startup
 std::atomic<uint64> Housing::s_nextDecorDbId{1};
 std::atomic<uint64> Housing::s_nextRoomDbId{1};
 
@@ -76,7 +76,7 @@ bool Housing::LoadFromDB(PreparedQueryResult housing, PreparedQueryResult decor,
 
     Field* fields = housing->Fetch();
     // Expected columns: houseId, neighborhoodGuid, plotIndex, level, favor, settingsFlags, exteriorLocked, houseSize, houseType, ...
-    // fields[0] = houseId (DB2 entry ID) ? NOT used as GUID counter.
+    // fields[0] = houseId (DB2 entry ID) — NOT used as GUID counter.
     // Housing GUID counter must match HousingPlayerHouseEntity GUID (WorldSession.cpp), which uses battlenetAccountId.
     uint32 bnetAccountId = _owner->GetSession()->GetBattlenetAccountId();
     _houseGuid = ObjectGuid::Create<HighGuid::Housing>(/*subType*/ 3, /*arg1*/ sRealmList->GetCurrentRealmId().Realm, /*arg2*/ 7, uint64(bnetAccountId));
@@ -213,15 +213,15 @@ bool Housing::LoadFromDB(PreparedQueryResult housing, PreparedQueryResult decor,
             if (wrongRoomGuid.IsEmpty())
                 wrongRoomGuid = guid;
             else
-                hasVisualRoom = true; // Multiple visual rooms ? don't mess with them
+                hasVisualRoom = true; // Multiple visual rooms — don't mess with them
         }
 
-        // NOTE: Previously replaced non-Room-1 rooms with Room 1. This was too aggressive ?
+        // NOTE: Previously replaced non-Room-1 rooms with Room 1. This was too aggressive —
         // it replaced valid user placements (e.g., Stairwell) and lost gridX/gridY coordinates.
         // Rooms placed by the user are valid regardless of entry type. Only add a default
         // visual room if there are NO non-base rooms at all (empty house).
 
-        // No visual room at all ? add one
+        // No visual room at all — add one
         if (!hasVisualRoom && wrongRoomGuid.IsEmpty() && correctVisualRoom)
         {
             // Find the next free slot (slot 0 is base room)
@@ -340,7 +340,7 @@ bool Housing::LoadFromDB(PreparedQueryResult housing, PreparedQueryResult decor,
 
     if ((!hasBaseRoot || !hasRoofRoot || !hasDoor) && _houseType != 0)
     {
-        TC_LOG_INFO("housing", "Housing::LoadFromDB: Missing starter fixtures (base={}, roof={}, door={}) for house {} ? populating (migration)",
+        TC_LOG_INFO("housing", "Housing::LoadFromDB: Missing starter fixtures (base={}, roof={}, door={}) for house {} — populating (migration)",
             hasBaseRoot, hasRoofRoot, hasDoor, _houseGuid.ToString());
         PopulateStarterFixtures();
     }
@@ -378,7 +378,7 @@ bool Housing::LoadFromDB(PreparedQueryResult housing, PreparedQueryResult decor,
                 entry.DecorEntryId = decorId;
                 entry.Count = qty;
             }
-            TC_LOG_ERROR("housing", "Housing::LoadFromDB: Catalog was empty for house {} ? auto-populated {} starter decor types for player {}",
+            TC_LOG_ERROR("housing", "Housing::LoadFromDB: Catalog was empty for house {} — auto-populated {} starter decor types for player {}",
                 _houseGuid.ToString(), uint32(starterDecorWithQty.size()), _owner->GetGUID().ToString());
 
             // Persist the fixup to DB so it only happens once
@@ -414,7 +414,7 @@ bool Housing::LoadFromDB(PreparedQueryResult housing, PreparedQueryResult decor,
     // Recalculate budget weights from loaded data
     RecalculateBudgets();
 
-    // NOTE: FHousingStorage_C is NOT populated at login ? retail flow confirms it is only sent
+    // NOTE: FHousingStorage_C is NOT populated at login — retail flow confirms it is only sent
     // when the player enters edit mode or sends REQUEST_STORAGE. Populating it at login causes
     // client crashes (BLZ_ALLOC for HouseDecorGUID) because the client doesn't expect storage
     // data in the initial Account entity CREATE. Storage entries (both placed and catalog) are
@@ -586,7 +586,7 @@ HousingResult Housing::Create(ObjectGuid neighborhoodGuid, uint8 plotIndex)
     _editorMode = HOUSING_EDITOR_MODE_NONE;
     _exteriorLocked = false;
     _houseSize = HOUSING_FIXTURE_SIZE_SMALL;
-    // Racial house style: Night Elf ? 55, Blood Elf ? 56, other Alliance ? 9, other Horde ? 87
+    // Racial house style: Night Elf → 55, Blood Elf → 56, other Alliance → 9, other Horde → 87
     _houseType = HousingMgr::GetRacialWmoDataID(_owner->GetRace(), _owner->GetTeam());
     _createTime = static_cast<uint32>(GameTime::GetGameTime());
     _hasCustomPosition = false;
@@ -599,13 +599,13 @@ HousingResult Housing::Create(ObjectGuid neighborhoodGuid, uint8 plotIndex)
     uint32 bnetAccountId = _owner->GetSession() ? _owner->GetSession()->GetBattlenetAccountId() : 0;
     if (bnetAccountId == 0)
     {
-        TC_LOG_ERROR("housing", "Housing::Create: BNetAccountId is 0 for player {} ? falling back to player GUID counter",
+        TC_LOG_ERROR("housing", "Housing::Create: BNetAccountId is 0 for player {} — falling back to player GUID counter",
             _owner->GetGUID().ToString());
         bnetAccountId = static_cast<uint32>(_owner->GetGUID().GetCounter());
     }
     _houseGuid = ObjectGuid::Create<HighGuid::Housing>(/*subType*/ 3, /*arg1*/ sRealmList->GetCurrentRealmId().Realm, /*arg2*/ 7, uint64(bnetAccountId));
 
-    TC_LOG_ERROR("housing", "Housing::Create: Player {} (BNetAcct {}) created house on plot {} in neighborhood {} ? HouseGuid={}",
+    TC_LOG_ERROR("housing", "Housing::Create: Player {} (BNetAcct {}) created house on plot {} in neighborhood {} — HouseGuid={}",
         _owner->GetName(), bnetAccountId, plotIndex, _neighborhoodGuid.ToString(), _houseGuid.ToString());
 
     SyncUpdateFields();
@@ -616,11 +616,11 @@ HousingResult Housing::Create(ObjectGuid neighborhoodGuid, uint8 plotIndex)
     PlaceRoom(sHousingMgr.GetEntryHallRoomEntryId(), /*slotIndex*/ 0, /*orientation*/ 0, /*mirrored*/ false);
 
     // Also place a default visual room so the interior renders walls/floor/ceiling.
-    // Base room (18) only provides the geobox boundary ? visual geometry needs a separate room.
+    // Base room (18) only provides the geobox boundary — visual geometry needs a separate room.
     uint32 visualRoom = sHousingMgr.GetDefaultVisualRoomEntry();
     if (visualRoom)
     {
-        // Entry door at +3, Room1 door at -12 ? spacing = 3-(-12) = 15 yards
+        // Entry door at +3, Room1 door at -12 → spacing = 3-(-12) = 15 yards
         HousingResult visualResult = PlaceRoom(visualRoom, /*slotIndex*/ 1, /*orientation*/ 0, /*mirrored*/ false, nullptr, /*gridX*/ 15, /*gridY*/ 0);
         if (visualResult == HOUSING_RESULT_SUCCESS)
         {
@@ -629,14 +629,14 @@ HousingResult Housing::Create(ObjectGuid neighborhoodGuid, uint8 plotIndex)
         }
         else
         {
-            TC_LOG_ERROR("housing", "Housing::Create: PlaceRoom FAILED for visual room entry {} ? result={} ? "
+            TC_LOG_ERROR("housing", "Housing::Create: PlaceRoom FAILED for visual room entry {} — result={} — "
                 "interior will be empty for player {}",
                 visualRoom, visualResult, _owner->GetName());
         }
     }
     else
     {
-        TC_LOG_ERROR("housing", "Housing::Create: No visual room entry found ? interior will be empty for player {}",
+        TC_LOG_ERROR("housing", "Housing::Create: No visual room entry found — interior will be empty for player {}",
             _owner->GetName());
     }
 
@@ -717,7 +717,7 @@ ObjectGuid Housing::StartPlacingNewDecor(uint32 catalogEntryId, HousingResult& r
     }
 
     // Generate a GUID for this pending placement.
-    // Must use subType=1 (decor GUID format) ? subType=0 returns ObjectGuid::Empty!
+    // Must use subType=1 (decor GUID format) — subType=0 returns ObjectGuid::Empty!
     uint64 newDbId = GenerateDecorDbId();
     ObjectGuid decorGuid = ObjectGuid::Create<HighGuid::Housing>(
         /*subType*/ 1, /*arg1*/ sRealmList->GetCurrentRealmId().Realm,
@@ -924,7 +924,7 @@ HousingResult Housing::PlaceDecor(uint32 decorEntryId, float x, float y, float z
         return HOUSING_RESULT_DECOR_NOT_FOUND_IN_STORAGE;
 
     // Generate a new decor guid.
-    // Must use subType=1 (decor GUID format) ? subType=0 returns ObjectGuid::Empty!
+    // Must use subType=1 (decor GUID format) — subType=0 returns ObjectGuid::Empty!
     uint64 newDbId = GenerateDecorDbId();
     ObjectGuid decorGuid = ObjectGuid::Create<HighGuid::Housing>(
         /*subType*/ 1, /*arg1*/ sRealmList->GetCurrentRealmId().Realm,
@@ -993,7 +993,7 @@ HousingResult Housing::PlaceDecor(uint32 decorEntryId, float x, float y, float z
         CharacterDatabase.Execute(stmt);
     }
 
-    // Update account decor storage UpdateField (only if storage is populated ? not during LoadFromDB)
+    // Update account decor storage UpdateField (only if storage is populated — not during LoadFromDB)
     if (_storagePopulated && _owner->GetSession())
         _owner->GetSession()->GetBattlenetAccount().SetHousingDecorStorageEntry(decorGuid, _houseGuid, decor.SourceType, decor.SourceValue);
 
@@ -1028,13 +1028,13 @@ uint32 Housing::PlaceStarterDecor()
 
     if (visualRoomGuid.IsEmpty())
     {
-        TC_LOG_ERROR("housing", "Housing::PlaceStarterDecor: No visual room found for house {} ? cannot place starter decor",
+        TC_LOG_ERROR("housing", "Housing::PlaceStarterDecor: No visual room found for house {} — cannot place starter decor",
             _houseGuid.ToString());
         return 0;
     }
 
     // Sniff-verified starter decor positions (room-local coordinates in the visual room).
-    // Both factions use the same Room 1 geometry ? only the DecorEntryIDs differ.
+    // Both factions use the same Room 1 geometry — only the DecorEntryIDs differ.
     // Positions from horde_housing sniff: painting on wall, table on floor, chandelier on ceiling,
     // 2nd painting on opposite wall, fireplace against wall.
     struct StarterDecorPlacement
@@ -1060,7 +1060,7 @@ uint32 Housing::PlaceStarterDecor()
     }
     else
     {
-        // Alliance starter decor ? same room geometry, faction-specific items.
+        // Alliance starter decor — same room geometry, faction-specific items.
         // Using equivalent positions (wall art, table, ceiling fixture, wall art, hearth).
         placements = {
             {  389, 11.458f,  7.588f, 2.984f, 0.0f, 0.0f, -0.9999962f, 0.0027621f },  // wall art
@@ -1085,7 +1085,7 @@ uint32 Housing::PlaceStarterDecor()
         if (result == HOUSING_RESULT_SUCCESS)
             ++placedCount;
         else
-            TC_LOG_ERROR("housing", "Housing::PlaceStarterDecor: Failed to place decor entry {} ? result={}",
+            TC_LOG_ERROR("housing", "Housing::PlaceStarterDecor: Failed to place decor entry {} — result={}",
                 p.DecorEntryId, result);
     }
 
@@ -1112,8 +1112,8 @@ HousingResult Housing::MoveDecor(ObjectGuid decorGuid, float x, float y, float z
     if (itr == _placedDecor.end())
         return HOUSING_RESULT_DECOR_NOT_FOUND;
 
-    // Sniff-verified: Lock?Move is valid (the locker is the one moving).
-    // Lock only prevents OTHER editors from modifying ? not the owner.
+    // Sniff-verified: Lock→Move is valid (the locker is the one moving).
+    // Lock only prevents OTHER editors from modifying — not the owner.
     // TODO: When multi-editor support is added, track LockedByGuid and check here.
 
     PlacedDecor& decor = itr->second;
@@ -1154,9 +1154,9 @@ HousingResult Housing::RemoveDecor(ObjectGuid decorGuid)
     if (itr == _placedDecor.end())
         return HOUSING_RESULT_DECOR_NOT_FOUND;
 
-    // Sniff-verified: Lock?Remove is a valid retail flow (packet #27117 LOCK then
+    // Sniff-verified: Lock→Remove is a valid retail flow (packet #27117 LOCK then
     // #27139 REMOVE with Result=0). The house owner can always remove their own decor.
-    // Lock only prevents OTHER editors from modifying ? not the owner.
+    // Lock only prevents OTHER editors from modifying — not the owner.
 
     // Refund WeightCost budget (route to correct budget based on room)
     uint32 decorEntryId = itr->second.DecorEntryId;
@@ -1188,7 +1188,7 @@ HousingResult Housing::RemoveDecor(ObjectGuid decorGuid)
 
     _placedDecor.erase(itr);
 
-    // Immediate persist for crash safety ? delete the placed decor row
+    // Immediate persist for crash safety — delete the placed decor row
     {
         CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHARACTER_HOUSING_DECOR_SINGLE);
         stmt->setUInt64(0, _owner->GetGUID().GetCounter());
@@ -1336,7 +1336,7 @@ HousingResult Housing::PlaceRoom(uint32 roomEntryId, uint32 slotIndex, uint32 or
     }
 
     // NOTE: Doorway components (Type 7) are OPTIONAL in the DB2.
-    // Standard rooms (1-15) have 0 doorway components ? they use wall segments (Type 1) instead.
+    // Standard rooms (1-15) have 0 doorway components — they use wall segments (Type 1) instead.
     // Only prefab/custom rooms (113+) have explicit doorway components.
     // Retail places rooms without doorways, so we don't enforce this check.
 
@@ -1546,7 +1546,7 @@ bool Housing::IsRoomGraphConnectedWithout(ObjectGuid excludeRoomGuid) const
 
         uint32 currentSlot = currentItr->second.SlotIndex;
 
-        // Check adjacent slots (slot � 1)
+        // Check adjacent slots (slot ± 1)
         for (int32 offset : { -1, 1 })
         {
             uint32 adjacentSlot = currentSlot + offset;
@@ -1626,7 +1626,7 @@ HousingResult Housing::ApplyRoomWallpaper(ObjectGuid roomGuid, uint32 wallpaperI
         }
     }
 
-    // 0xFFFFFFFF means "reset to default" - store as 0 (no override)
+    // 0xFFFFFFFF means "reset to default" — store as 0 (no override)
     itr->second.WallpaperId = (wallpaperId == 0xFFFFFFFF) ? 0 : wallpaperId;
     itr->second.MaterialId = materialId;
 
@@ -1703,7 +1703,7 @@ HousingResult Housing::SelectFixtureOption(uint32 fixturePointId, uint32 optionI
     if (_houseGuid.IsEmpty())
         return HOUSING_RESULT_HOUSE_NOT_FOUND;
 
-    // Root fixture selections (optionId == 0) use componentID as fixturePointId ? skip hook validation
+    // Root fixture selections (optionId == 0) use componentID as fixturePointId — skip hook validation
     if (optionId != 0)
     {
         // Validate hook exists in DB2
@@ -1725,7 +1725,7 @@ HousingResult Housing::SelectFixtureOption(uint32 fixturePointId, uint32 optionI
         // Validate component type matches hook's expected type
         if (compEntry->Type != hookEntry->ExteriorComponentTypeID)
         {
-            TC_LOG_DEBUG("housing", "SelectFixtureOption: type mismatch ? component {} type {} vs hook {} expected type {}",
+            TC_LOG_DEBUG("housing", "SelectFixtureOption: type mismatch — component {} type {} vs hook {} expected type {}",
                 optionId, compEntry->Type, fixturePointId, hookEntry->ExteriorComponentTypeID);
             return HOUSING_RESULT_GENERIC_FAILURE;
         }
@@ -1743,7 +1743,7 @@ HousingResult Housing::SelectFixtureOption(uint32 fixturePointId, uint32 optionI
                 ExteriorComponentEntry const* existingComp = sExteriorComponentStore.LookupEntry(fixture.OptionId);
                 if (existingComp && existingComp->Type == HOUSING_FIXTURE_TYPE_DOOR)
                 {
-                    TC_LOG_INFO("housing", "SelectFixtureOption: replacing existing door at hook {} (comp {}) ? moving entrance to hook {}",
+                    TC_LOG_INFO("housing", "SelectFixtureOption: replacing existing door at hook {} (comp {}) — moving entrance to hook {}",
                         pointId, fixture.OptionId, fixturePointId);
                     conflictHooks.push_back(pointId);
                 }
@@ -1793,7 +1793,7 @@ HousingResult Housing::SelectFixtureOption(uint32 fixturePointId, uint32 optionI
                 ExteriorComponentEntry const* oldComp = sExteriorComponentStore.LookupEntry(fixture.FixturePointId);
                 if (oldComp && oldComp->Type == newType)
                 {
-                    TC_LOG_INFO("housing", "SelectFixtureOption: replacing root type {} ? removing old comp {} in favor of new comp {}",
+                    TC_LOG_INFO("housing", "SelectFixtureOption: replacing root type {} — removing old comp {} in favor of new comp {}",
                         newType, pointId, fixturePointId);
                     toRemove.push_back(pointId);
                 }
@@ -1829,7 +1829,7 @@ HousingResult Housing::SelectFixtureOption(uint32 fixturePointId, uint32 optionI
     fixture.FixturePointId = fixturePointId;
     fixture.OptionId = optionId;
 
-    // Immediate persist ? use REPLACE semantics (delete old + insert new)
+    // Immediate persist — use REPLACE semantics (delete old + insert new)
     if (!isNew)
         PersistFixtureToDB(fixturePointId, optionId);
     else
@@ -1888,7 +1888,7 @@ HousingResult Housing::RemoveFixture(uint32 componentID, uint32* outHookID /*= n
 
     _fixtures.erase(itr);
 
-    // Immediate persist ? delete single fixture from DB
+    // Immediate persist — delete single fixture from DB
     {
         CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_DEL_CHARACTER_HOUSING_FIXTURE_SINGLE);
         stmt->setUInt64(0, _owner->GetGUID().GetCounter());
@@ -1938,7 +1938,7 @@ std::unordered_map<uint8, uint32> Housing::GetRootComponentOverrides() const
     // Build override map for player-selected root components per type.
     // Core fixtures (OptionId == 0) represent the player's choice for a structural root type.
     // These include both base variants (ParentComponentID == 0) and color/style variants
-    // (ParentComponentID != 0) ? color variants are valid selections via SetCoreFixture.
+    // (ParentComponentID != 0) — color variants are valid selections via SetCoreFixture.
     std::unordered_map<uint8, uint32> result;
 
     for (auto const& [pointId, fixture] : _fixtures)
@@ -1949,26 +1949,26 @@ std::unordered_map<uint8, uint32> Housing::GetRootComponentOverrides() const
         ExteriorComponentEntry const* comp = sExteriorComponentStore.LookupEntry(fixture.FixturePointId);
         if (!comp)
         {
-            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: fixturePointId={} ? DB2 lookup failed", fixture.FixturePointId);
+            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: fixturePointId={} — DB2 lookup failed", fixture.FixturePointId);
             continue;
         }
         // Only structural root types (Base=9, Roof=10) are valid here.
         // Fixture types (Door=11, Window=12, etc.) stored with OptionId=0 would be invalid.
         if (comp->Type != HOUSING_FIXTURE_TYPE_BASE && comp->Type != HOUSING_FIXTURE_TYPE_ROOF)
         {
-            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: comp={} type={} ? not a structural root type, skipping",
+            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: comp={} type={} — not a structural root type, skipping",
                 comp->ID, comp->Type);
             continue;
         }
         if (_houseType != 0 && comp->HouseExteriorWmoDataID != static_cast<uint32>(_houseType))
         {
-            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: comp={} type={} ? wmo={} != houseType={} (wrong style)",
+            TC_LOG_DEBUG("housing", "GetRootComponentOverrides: comp={} type={} — wmo={} != houseType={} (wrong style)",
                 comp->ID, comp->Type, comp->HouseExteriorWmoDataID, _houseType);
             continue;
         }
 
         result[comp->Type] = fixture.FixturePointId;
-        TC_LOG_DEBUG("housing", "GetRootComponentOverrides: type={} ? comp={} (wmo={}, parentComp={})",
+        TC_LOG_DEBUG("housing", "GetRootComponentOverrides: type={} → comp={} (wmo={}, parentComp={})",
             comp->Type, fixture.FixturePointId, comp->HouseExteriorWmoDataID, comp->ParentComponentID);
     }
 
@@ -1980,7 +1980,7 @@ std::unordered_map<uint8, uint32> Housing::GetRootComponentOverrides() const
 uint32 Housing::GetCoreExteriorComponentID() const
 {
     // The core fixture is the primary component set via SetCoreFixture (OptionId == 0).
-    // It can be any root type ? Base (9) for Alliance, or different types for Horde.
+    // It can be any root type — Base (9) for Alliance, or different types for Horde.
     for (auto const& [pointId, fixture] : _fixtures)
     {
         if (fixture.OptionId == 0)
@@ -1993,7 +1993,7 @@ uint32 Housing::GetCoreExteriorComponentID() const
                 return fixture.FixturePointId;
         }
     }
-    // No explicit core fixture set ? find first default root component for this house's WMO data ID.
+    // No explicit core fixture set — find first default root component for this house's WMO data ID.
     if (_houseType > 0)
     {
         auto const* roots = sHousingMgr.GetRootComponentsForWmoData(static_cast<uint32>(_houseType));
@@ -2017,7 +2017,7 @@ uint32 Housing::GetCoreExteriorComponentID() const
     }
     else
     {
-        TC_LOG_ERROR("housing", "Housing::GetCoreExteriorComponentID: No fixtures and houseType=0 ? cannot determine base component");
+        TC_LOG_ERROR("housing", "Housing::GetCoreExteriorComponentID: No fixtures and houseType=0 — cannot determine base component");
     }
     return 0;
 }
@@ -2304,7 +2304,7 @@ void Housing::SyncUpdateFields()
     houseEntity.SetPlotIndex(static_cast<int32>(_plotIndex));
     houseEntity.SetLevel(_level);
     houseEntity.SetFavor(_favor64);
-    // Send MAX budgets ? the client computes remaining locally by summing placed decor weight
+    // Send MAX budgets — the client computes remaining locally by summing placed decor weight
     // from FHousingStorage_C entries. Sending (max - used) would cause double-subtraction.
     houseEntity.SetBudgets(
         GetMaxInteriorDecorBudget(),
@@ -2329,11 +2329,11 @@ void Housing::PopulateCatalogStorageEntries()
 
     Battlenet::Account& account = _owner->GetSession()->GetBattlenetAccount();
 
-    // 1. Placed decor ? HouseGUID=_houseGuid, SourceType from decor instance
+    // 1. Placed decor → HouseGUID=_houseGuid, SourceType from decor instance
     for (auto const& [decorGuid, decor] : _placedDecor)
         account.SetHousingDecorStorageEntry(decorGuid, _houseGuid, decor.SourceType, decor.SourceValue);
 
-    // 2. Catalog (unplaced/available) entries ? HouseGUID=Empty, SourceType=0
+    // 2. Catalog (unplaced/available) entries → HouseGUID=Empty, SourceType=0
     // Sniff-verified: items in storage have HouseGUID=Empty, placed items have non-empty HouseGUID.
     // Catalog Count includes placed instances, so subtract them to get the storage-only count.
     std::unordered_map<uint32, uint32> placedCountByEntry;
@@ -2539,7 +2539,7 @@ void Housing::PopulateStarterFixtures()
     {
         if (existingRootTypes.count(fixtureType))
         {
-            TC_LOG_INFO("housing", "Housing::PopulateStarterFixtures: type={} already has a root ? skipping",
+            TC_LOG_INFO("housing", "Housing::PopulateStarterFixtures: type={} already has a root — skipping",
                 fixtureType);
             continue;
         }
@@ -2547,7 +2547,7 @@ void Housing::PopulateStarterFixtures()
         uint32 compID = sHousingMgr.GetDefaultFixtureForType(fixtureType, _houseType, _houseSize);
         if (!compID)
         {
-            TC_LOG_ERROR("housing", "Housing::PopulateStarterFixtures: No default component for type={} wmo={} size={} ? skipping",
+            TC_LOG_ERROR("housing", "Housing::PopulateStarterFixtures: No default component for type={} wmo={} size={} — skipping",
                 fixtureType, _houseType, _houseSize);
             continue;
         }
