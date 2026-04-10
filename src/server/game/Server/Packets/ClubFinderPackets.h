@@ -78,11 +78,11 @@ namespace WorldPackets
 
             void Read() override;
 
-            // TODO: needs sniff - guild leader posting a listing
-            std::string Description;
+            ObjectGuid ClubGUID;
             uint32 Playstyle = 0;
             uint32 Interests = 0;
             uint32 ClassMask = 0;
+            std::string Description;
             uint8 MinLevel = 0;
             uint8 MaxLevel = 0;
         };

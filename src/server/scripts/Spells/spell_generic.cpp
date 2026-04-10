@@ -3122,6 +3122,22 @@ class spell_gen_two_forms : public SpellScript
     }
 };
 
+class spell_gen_calm_the_wolf : public AuraScript
+{
+    void OnCombatStateChange(bool isNowInCombat)
+    {
+        if (isNowInCombat)
+            GetTarget()->CastSpell(GetTarget(), SPELL_ALTERED_FORM, true);
+        else
+            GetTarget()->RemoveAura(SPELL_ALTERED_FORM);
+    }
+
+    void Register() override
+    {
+        OnEnterLeaveCombat += AuraEnterLeaveCombatFn(spell_gen_calm_the_wolf::OnCombatStateChange);
+    }
+};
+
 class spell_gen_darkflight : public SpellScript
 {
     void TriggerTransform()
@@ -5937,6 +5953,8 @@ void AddSC_generic_spell_scripts()
     // Running Wild
     RegisterSpellAndAuraScriptPair(spell_gen_running_wild, spell_gen_running_wild_aura);
     RegisterSpellScript(spell_gen_two_forms);
+    RegisterSpellScript(spell_gen_calm_the_wolf);
+
     RegisterSpellScript(spell_gen_darkflight);
     /*                          */
     RegisterSpellScript(spell_gen_remove_on_health_pct);

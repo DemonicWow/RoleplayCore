@@ -1055,7 +1055,7 @@ class spell_evo_cosmic_visage : public SpellScript
             // Dracthyr Form
             caster->RemoveAurasDueToSpell(SPELL_VISAGE);
             caster->CastSpell(caster, SPELL_ALTERED_FORM, true);
-            caster->SendPlaySpellVisual(caster, SPELL_HATRED, 0, 0, 60, false);
+            caster->SendPlaySpellVisual(caster, SPELL_ALTERED_FORM, 0, 0, 60, false);
             caster->SetDisplayId(108590);
         }
         else
@@ -1065,7 +1065,7 @@ class spell_evo_cosmic_visage : public SpellScript
                 caster->RemoveAurasDueToSpell(SPELL_ALTERED_FORM);
 
             caster->CastSpell(caster, SPELL_VISAGE, true);
-            caster->SendPlaySpellVisual(caster, SPELL_HATRED, 0, 0, 60, false);
+            caster->SendPlaySpellVisual(caster, SPELL_ALTERED_FORM, 0, 0, 60, false);
             caster->SetDisplayId(104597);
         }
     }

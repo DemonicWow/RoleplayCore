@@ -60,21 +60,27 @@ void ApplicationResponse::Read()
 
 void ClubFinderPost::Read()
 {
-    // TODO: needs sniff — guild leader posting a listing
-    _worldPacket >> SizedString::BitsSize<11>(Description);
+    _worldPacket >> ClubGUID;
+
+    _worldPacket.ResetBitPos();
+
     _worldPacket >> Bits<32>(Playstyle);
     _worldPacket >> Bits<32>(Interests);
     _worldPacket >> Bits<32>(ClassMask);
+
+    _worldPacket >> SizedString::BitsSize<11>(Description);
+
     _worldPacket.FlushBits();
 
     _worldPacket >> MinLevel;
     _worldPacket >> MaxLevel;
+
     _worldPacket >> SizedString::Data(Description);
 }
 
 void RequestClubsList::Read()
 {
-    // TODO: needs sniff — paginated browse
+    // TODO: needs sniff ? paginated browse
     _worldPacket >> Offset;
     _worldPacket >> MaxResults;
     _worldPacket >> SearchType;
@@ -82,7 +88,7 @@ void RequestClubsList::Read()
 
 void RequestMembershipToClub::Read()
 {
-    // TODO: needs sniff — player applies to guild
+    // TODO: needs sniff ? player applies to guild
     _worldPacket >> PostingID;
     _worldPacket >> SizedString::BitsSize<11>(Comment);
     _worldPacket.FlushBits();
@@ -91,12 +97,12 @@ void RequestMembershipToClub::Read()
 
 void GetApplicantsList::Read()
 {
-    // TODO: needs sniff — guild leader views applicants
+    // TODO: needs sniff ? guild leader views applicants
 }
 
 void RespondToApplicant::Read()
 {
-    // TODO: needs sniff — accept/decline applicant
+    // TODO: needs sniff ? accept/decline applicant
     _worldPacket >> PostingID;
     _worldPacket >> ApplicantGUID;
     _worldPacket >> Response;
