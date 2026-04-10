@@ -652,7 +652,7 @@ SpellEffectValue SpellEffectInfo::CalcValue(WorldObject const* caster /*= nullpt
             }
             break;
         default:
-            break;
+            return false;
     }
 
     return std::clamp(value, MinValue, MaxValue);
