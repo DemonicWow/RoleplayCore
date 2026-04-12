@@ -101,6 +101,14 @@ ChatPacketSender* BroadcastTextBuilder::operator()(LocaleConstant locale) const
     uint8 const gender = unitSender ? unitSender->GetGender() : GENDER_UNKNOWN;
     uint32 soundKitId = bct ? bct->SoundKitID[gender == GENDER_FEMALE ? 1 : 0] : 0;
 
+    uint8 targetGender = GENDER_MALE;
+    if (_target)
+        if (Unit const* unit = _target->ToUnit())
+            targetGender = unit->GetGender();
+
+    std::string text = bct ? DB2Manager::GetBroadcastTextValue(bct, locale, _gender) : "";
+    text = CreatureTextMgr::ReplaceGenderTokens(std::move(text), targetGender);
+
     return new ChatPacketSender(_msgType,
         bct ? Language(bct->LanguageID) : LANG_UNIVERSAL,
         _source,
@@ -118,7 +126,13 @@ ChatPacketSender* BroadcastTextBuilder::operator()(LocaleConstant locale) const
 
 ChatPacketSender* CustomChatTextBuilder::operator()(LocaleConstant locale) const
 {
-    return new ChatPacketSender(_msgType, _language, _source, _target, _text, 0, locale);
+    uint8 targetGender = GENDER_MALE;
+    if (_target)
+        if (Unit const* unit = _target->ToUnit())
+            targetGender = unit->GetGender();
+
+    std::string text = CreatureTextMgr::ReplaceGenderTokens(_text, targetGender);
+    return new ChatPacketSender(_msgType, _language, _source, _target, std::move(text), 0, locale);
 }
 
 ChatPacketSender* TrinityStringChatBuilder::operator()(LocaleConstant locale) const
@@ -144,7 +158,16 @@ ChatPacketSender* TrinityStringChatBuilder::operator()(LocaleConstant locale) co
 
 ChatPacketSender* CreatureTextTextBuilder::operator()(LocaleConstant locale) const
 {
-    return new ChatPacketSender(_msgType, _language, _talker, _target, sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale), 0, locale,
+    std::string text = sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale);
+
+    uint8 targetGender = GENDER_MALE;
+    if (_target)
+        if (Unit const* unit = _target->ToUnit())
+            targetGender = unit->GetGender();
+
+    text = CreatureTextMgr::ReplaceGenderTokens(std::move(text), targetGender);
+
+    return new ChatPacketSender(_msgType, _language, _talker, _target, std::move(text), 0, locale,
         _broadcastTextId, _emoteId, _soundKitId, _soundKitPlayType, _playerConditionId);
 }
 }
