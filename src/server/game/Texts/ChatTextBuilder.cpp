@@ -77,21 +77,42 @@ void ChatPacketSender::operator()(Player const* player) const
     if (EmotePacket)
         player->SendDirectMessage(EmotePacket->GetRawPacket());
 
+    std::string finalText = CreatureTextMgr::ReplaceGenderTokens(Text, player->GetGender());
+    bool useCachedPacket = (finalText == Text);
+
     if (Language == LANG_UNIVERSAL || Language == LANG_ADDON || Language == LANG_ADDON_LOGGED || player->CanUnderstandLanguage(Language))
     {
-        player->SendDirectMessage(UntranslatedPacket.GetRawPacket());
+        if (useCachedPacket)
+        {
+            player->SendDirectMessage(UntranslatedPacket.GetRawPacket());
+            return;
+        }
+
+        WorldPackets::Chat::Chat message;
+        message.Initialize(Type, Language, Sender, Receiver, finalText, AchievementId, "", Locale);
+        player->SendDirectMessage(message.Write());
         return;
     }
 
-    if (!TranslatedPacket)
+    if (useCachedPacket)
     {
-        TranslatedPacket.emplace();
-        TranslatedPacket->Initialize(Type, Language, Sender, Receiver, sLanguageMgr->Translate(Text, Language, player->GetSession()->GetSessionDbcLocale()),
-            AchievementId, "", Locale);
-        TranslatedPacket->Write();
+        if (!TranslatedPacket)
+        {
+            TranslatedPacket.emplace();
+            TranslatedPacket->Initialize(Type, Language, Sender, Receiver, sLanguageMgr->Translate(Text, Language, player->GetSession()->GetSessionDbcLocale()),
+                AchievementId, "", Locale);
+            TranslatedPacket->Write();
+        }
+
+        player->SendDirectMessage(TranslatedPacket->GetRawPacket());
+        return;
     }
 
-    player->SendDirectMessage(TranslatedPacket->GetRawPacket());
+    WorldPackets::Chat::Chat message;
+    message.Initialize(Type, Language, Sender, Receiver,
+        sLanguageMgr->Translate(finalText, Language, player->GetSession()->GetSessionDbcLocale()),
+        AchievementId, "", Locale);
+    player->SendDirectMessage(message.Write());
 }
 
 ChatPacketSender* BroadcastTextBuilder::operator()(LocaleConstant locale) const
@@ -100,14 +121,6 @@ ChatPacketSender* BroadcastTextBuilder::operator()(LocaleConstant locale) const
     Unit const* unitSender = Object::ToUnit(_source);
     uint8 const gender = unitSender ? unitSender->GetGender() : GENDER_UNKNOWN;
     uint32 soundKitId = bct ? bct->SoundKitID[gender == GENDER_FEMALE ? 1 : 0] : 0;
-
-    uint8 targetGender = GENDER_MALE;
-    if (_target)
-        if (Unit const* unit = _target->ToUnit())
-            targetGender = unit->GetGender();
-
-    std::string text = bct ? DB2Manager::GetBroadcastTextValue(bct, locale, _gender) : "";
-    text = CreatureTextMgr::ReplaceGenderTokens(std::move(text), targetGender);
 
     return new ChatPacketSender(_msgType,
         bct ? Language(bct->LanguageID) : LANG_UNIVERSAL,
@@ -126,13 +139,7 @@ ChatPacketSender* BroadcastTextBuilder::operator()(LocaleConstant locale) const
 
 ChatPacketSender* CustomChatTextBuilder::operator()(LocaleConstant locale) const
 {
-    uint8 targetGender = GENDER_MALE;
-    if (_target)
-        if (Unit const* unit = _target->ToUnit())
-            targetGender = unit->GetGender();
-
-    std::string text = CreatureTextMgr::ReplaceGenderTokens(_text, targetGender);
-    return new ChatPacketSender(_msgType, _language, _source, _target, std::move(text), 0, locale);
+    return new ChatPacketSender(_msgType, _language, _source, _target, _text, 0, locale);
 }
 
 ChatPacketSender* TrinityStringChatBuilder::operator()(LocaleConstant locale) const
@@ -158,16 +165,7 @@ ChatPacketSender* TrinityStringChatBuilder::operator()(LocaleConstant locale) co
 
 ChatPacketSender* CreatureTextTextBuilder::operator()(LocaleConstant locale) const
 {
-    std::string text = sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale);
-
-    uint8 targetGender = GENDER_MALE;
-    if (_target)
-        if (Unit const* unit = _target->ToUnit())
-            targetGender = unit->GetGender();
-
-    text = CreatureTextMgr::ReplaceGenderTokens(std::move(text), targetGender);
-
-    return new ChatPacketSender(_msgType, _language, _talker, _target, std::move(text), 0, locale,
+    return new ChatPacketSender(_msgType, _language, _talker, _target, sCreatureTextMgr->GetLocalizedChatString(_source->GetEntry(), _gender, _textGroup, _textId, locale), 0, locale,
         _broadcastTextId, _emoteId, _soundKitId, _soundKitPlayType, _playerConditionId);
 }
 }
